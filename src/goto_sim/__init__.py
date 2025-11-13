@@ -27,3 +27,6 @@ Add a docstring here for the init module.
 This might include a very brief description of the package,
 its purpose, and any important notes.
 """
+
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
