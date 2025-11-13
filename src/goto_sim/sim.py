@@ -149,8 +149,8 @@ class AltAzCache:
             # Saving the whole SkyCoord is a bit inefficient, especially for large n_times
             alts = altaz.alt.deg
             azs = altaz.az.deg
-            # Combine both values into an array of size (n_nodes, n_tiles, n_times, 2)
-            data = np.stack([alts, azs], axis=-1)
+            # Combine both values into an array of size (n_times, n_nodes, n_tiles, 2)
+            data = np.stack([alts, azs], axis=-1).transpose(2, 0, 1, 3)
         else:
             # For large n_times, we generate the data in chunks to save memory
             chunk_size = 10_000
@@ -175,9 +175,9 @@ class AltAzCache:
                     )
                 alts = altaz.alt.deg
                 azs = altaz.az.deg
-                data_chunk = np.stack([alts, azs], axis=-1).astype(self.dtype)
+                data_chunk = np.stack([alts, azs], axis=-1).transpose(2, 0, 1, 3)
                 all_data.append(data_chunk)
-            data = np.concatenate(all_data, axis=2)
+            data = np.concatenate(all_data, axis=0)
 
         self.data = data.astype(self.dtype)
         self._validate()
@@ -237,7 +237,7 @@ class AltAzCache:
 
         data = npzfile["data"]
         # Check that the data shape matches
-        expected_shape = (len(self.nodes), self.grid.ntiles, self.n_times, 2)
+        expected_shape = (self.n_times, len(self.nodes), self.grid.ntiles, 2)
         if data.shape != expected_shape:
             raise ValueError(
                 f"Data shape in file {data.shape} does not match expected shape {expected_shape}"
@@ -251,7 +251,7 @@ class AltAzCache:
         :return:
         """
         data = self.get_data()
-        expected_shape = (len(self.nodes), self.grid.ntiles, self.n_times, 2)
+        expected_shape = (self.n_times, len(self.nodes), self.grid.ntiles, 2)
         if data.shape != expected_shape:
             raise ValueError(
                 f"Cache data shape {data.shape} does not match expected shape {expected_shape}"
@@ -346,5 +346,6 @@ class Simulator:
         :return:
         """
         if self.cache.data is None:
+            logger.info("No AltAz data cache, generating new one")
             self.cache.generate_cache()
         pass
