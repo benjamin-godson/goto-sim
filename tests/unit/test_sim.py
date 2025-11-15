@@ -10,7 +10,6 @@ module.
 from time import perf_counter, perf_counter_ns
 
 import numpy as np
-from astropy.coordinates import SkyCoord
 
 from goto_sim.sim import GOTONode, Simulator, AltAzCache
 from astropy.time import Time
@@ -83,9 +82,11 @@ def test_rank_tiles():
         f"Ranking {cache.grid.ntiles} tiles for {cache.n_times} timesteps and {len(cache.nodes)} nodes took {end - start:g} seconds"
     )
 
+
 def test_run_simulator():
     sim = Simulator()
     sim.run()
+
 
 def bench_generate_cache(n_times: int = 1000):
     """

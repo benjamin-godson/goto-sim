@@ -4,7 +4,7 @@ Core module for simulation classes and logic.
 
 import numpy as np
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, erfa_astrom, get_sun
-from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
+from astropy.coordinates.erfa_astrom import ErfaAstromInterpolator
 from astropy.time import Time
 import astropy.units as u
 from gototile.grid import SkyGrid
@@ -123,7 +123,9 @@ class AltAzCache:
                 self.time_step = time_step
             else:
                 raise ValueError("time_step must be > 0")
-            self.times: Time = self.start_time + np.arange(self.n_times) * self.time_step
+            self.times: Time = (
+                self.start_time + np.arange(self.n_times) * self.time_step
+            )
 
         self.data = data
         self.grid = grid
@@ -162,9 +164,7 @@ class AltAzCache:
                 start_idx = i * chunk_size
                 end_idx = min((i + 1) * chunk_size, self.n_times)
                 times_chunk = self.times[start_idx:end_idx]
-                locations = concat_earth_locations(
-                    [x.location for x in self.nodes]
-                )
+                locations = concat_earth_locations([x.location for x in self.nodes])
                 coords = self.grid.coords
                 frame = AltAz(
                     location=locations[:, np.newaxis, np.newaxis],
@@ -330,8 +330,11 @@ class Simulator:
         self.time_step = time_step
         if cache is None:
             cache = AltAzCache(
-            start_time=start_time, stop_time=end_time, nodes=nodes, time_step=time_step
-        )
+                start_time=start_time,
+                stop_time=end_time,
+                nodes=nodes,
+                time_step=time_step,
+            )
         self.cache = cache
         self.locations = [node.location for node in cache.nodes]
         self.times: Time = self.cache.times
@@ -382,8 +385,9 @@ class Simulator:
                         "sun_alt": sun_alt,
                     }
                     observations.append(obs)
-                    logger.debug(f"Time {time.iso}, Node {node.name}, Telescope {tel + 1}: Observation scheduled (Sun alt {sun_alt:.2f}°)")
-
+                    logger.debug(
+                        f"Time {time.iso}, Node {node.name}, Telescope {tel + 1}: Observation scheduled (Sun alt {sun_alt:.2f}°)"
+                    )
 
     def _setup(self):
         """
@@ -399,13 +403,19 @@ class Simulator:
         logger.debug("Calculating Solar positions")
         sun = get_sun(self.times)
         locations = concat_earth_locations(self.locations)
-        frame = AltAz(obstime=self.times[:, np.newaxis],
-                      location=locations[np.newaxis:,])
+        frame = AltAz(
+            obstime=self.times[:, np.newaxis], location=locations[np.newaxis :,]
+        )
         self.sun_altaz = sun[:, np.newaxis].transform_to(frame)
 
         # Populate telescope array
-        self.tels = np.arange(np.fromiter([node.telescopes for node in self.nodes],
-                                          dtype=int).sum()) + 1 # 1-indexed
+        self.tels = (
+            np.arange(
+                np.fromiter([node.telescopes for node in self.nodes], dtype=int).sum()
+            )
+            + 1
+        )  # 1-indexed
+
 
 class HEATSCOLDSimulator(Simulator):
     """

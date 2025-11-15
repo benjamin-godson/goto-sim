@@ -31,6 +31,7 @@ def test_create_survey():
     survey.remove_tiles(["T0001", "T0003"])
     assert survey.tiles == []
 
+
 def test_survey_tel_mask():
     """
     Test that the survey telescope mask is created correctly.

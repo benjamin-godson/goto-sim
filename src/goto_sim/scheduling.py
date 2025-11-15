@@ -1,6 +1,7 @@
 """
 Tools to support scheduling in the GOTO simulator. Allowing for creation of surveys.
 """
+
 from typing import Union
 
 import numpy as np
@@ -18,11 +19,15 @@ class Survey:
     :param tel_mask: Boolean mask array indicating which telescopes to use. If None, all telescopes are used.
     :param grid: SkyGrid object defining the tile grid. Defaults to GOTO grid.
     """
-    def __init__(self, name: str,
-                 tiles: Union[None, list[str]] = None,
-                 revisit_time: u.Quantity[u.day] = 1 * u.day,
-                 tels: Union[None, np.ndarray, list] = None,
-                 grid: SkyGrid = SkyGrid.from_name('GOTO')):
+
+    def __init__(
+        self,
+        name: str,
+        tiles: Union[None, list[str]] = None,
+        revisit_time: u.Quantity[u.day] = 1 * u.day,
+        tels: Union[None, np.ndarray, list] = None,
+        grid: SkyGrid = SkyGrid.from_name("GOTO"),
+    ):
         self.name = name
         if tiles is not None:
             self.tiles = tiles
@@ -33,10 +38,10 @@ class Survey:
         if tels is not None:
             self.tels = np.array(tels)
         else:
-            #TODO: Currently hardcoded for 4 telescopes
+            # TODO: Currently hardcoded for 4 telescopes
             self.tels = np.array([1, 2, 3, 4])
 
-        #TODO: Currently hardcoded for 4 telescopes
+        # TODO: Currently hardcoded for 4 telescopes
         tel_mask = np.zeros(4, dtype=bool)
         for tel in self.tels:
             tel_mask[tel - 1] = True
@@ -75,7 +80,7 @@ class Survey:
         Load tiles from a text file. Each line in the file should contain a single tile name.
         :param filename: Path to the text file containing tile names.
         """
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             for line in f:
                 tile = line.strip()
                 if tile:
@@ -96,35 +101,44 @@ class Survey:
         self.tiles = list(set(self.tiles))
         self.tiles.sort()
 
-    def  _generate_indices(self):
+    def _generate_indices(self):
         """
         Generate indices for the tiles in the survey.
         """
         self.indices = np.array([int(tile[1:]) - 1 for tile in self.tiles])
 
+
 class HEATS(Survey):
     """
     Convenience for generating survey for GOTO-HEATS.
     """
-    def __init__(self, name: str = "HEATS Survey",
-                 revisit_time: u.Quantity[u.day] = 1 * u.day,
-                 tels: Union[None, np.ndarray, list] = None,
-                 grid: SkyGrid = SkyGrid.from_name('GOTO')):
-        super().__init__(name=name,
-                         tiles=[],
-                         revisit_time=revisit_time,
-                         tels=tels,
-                         grid=grid)
+
+    def __init__(
+        self,
+        name: str = "HEATS Survey",
+        revisit_time: u.Quantity[u.day] = 1 * u.day,
+        tels: Union[None, np.ndarray, list] = None,
+        grid: SkyGrid = SkyGrid.from_name("GOTO"),
+    ):
+        super().__init__(
+            name=name, tiles=[], revisit_time=revisit_time, tels=tels, grid=grid
+        )
+
     def generate_colds(self) -> Survey:
         """
         Generate a complementary survey for the COLD tiles.
         :return: Survey object containing the COLD tiles.
         """
-        cold_tiles = [f"T{str(i).zfill(4)}" for i in range(self.grid.ntiles)
-                      if i not in self.indices]
-        cold_survey = Survey(name="COLD Survey",
-                             tiles=cold_tiles,
-                             revisit_time=self.revisit_time,
-                             tels=self.tels,
-                             grid=self.grid)
+        cold_tiles = [
+            f"T{str(i).zfill(4)}"
+            for i in range(self.grid.ntiles)
+            if i not in self.indices
+        ]
+        cold_survey = Survey(
+            name="COLD Survey",
+            tiles=cold_tiles,
+            revisit_time=self.revisit_time,
+            tels=self.tels,
+            grid=self.grid,
+        )
         return cold_survey
