@@ -45,3 +45,27 @@ def test_survey_tel_mask():
     expected_mask = np.array([False, True, False, True])
     assert (survey.tel_mask == expected_mask).all()
     assert (survey.tels == [2, 4]).all()
+
+
+def test_survey_tile_verification():
+    """
+    Test that the survey tile verification raises an error for invalid tiles.
+    """
+    survey = Survey(name="Test Survey")
+    try:
+        survey.add_tiles("INVALID_TILE")
+    except ValueError as e:
+        assert str(e) == "Invalid tile names in survey: ['INVALID_TILE']"
+    else:
+        assert False, "ValueError not raised for invalid tile."
+
+    try:
+        survey.add_tiles(["T0001", "INVALID_TILE"])
+    except ValueError as e:
+        assert str(e) == "Invalid tile names in survey: ['INVALID_TILE']"
+    else:
+        assert False, "ValueError not raised for invalid tile."
+
+    survey = Survey(name="Test Survey")
+    survey.add_tiles(["T0002", "T0003"])
+    assert survey.tiles == ["T0002", "T0003"]

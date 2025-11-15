@@ -29,25 +29,27 @@ class Survey:
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
     ):
         self.name = name
+        self.grid = grid
+
         if tiles is not None:
             self.tiles = tiles
         else:
             self.tiles = []
-        self._generate_indices()
+
         self.revisit_time = revisit_time
+
         if tels is not None:
             self.tels = np.array(tels)
         else:
             # TODO: Currently hardcoded for 4 telescopes
             self.tels = np.array([1, 2, 3, 4])
-
         # TODO: Currently hardcoded for 4 telescopes
         tel_mask = np.zeros(4, dtype=bool)
         for tel in self.tels:
             tel_mask[tel - 1] = True
         self.tel_mask = tel_mask
-
-        self.grid = grid
+        self._verify_tiles()
+        self._generate_indices()
 
     def add_tiles(self, tile: Union[str, list[str]]):
         """
@@ -60,6 +62,7 @@ class Survey:
         else:
             self.tiles.append(tile)
         self._remove_duplicates()
+        self._verify_tiles()
         self._generate_indices()
 
     def remove_tiles(self, tile: Union[str, list[str]]):
@@ -86,6 +89,7 @@ class Survey:
                 if tile:
                     self.tiles.append(tile)
         self._remove_duplicates()
+        self._verify_tiles()
         self._generate_indices()
 
     def get_tiles(self):
@@ -106,6 +110,15 @@ class Survey:
         Generate indices for the tiles in the survey.
         """
         self.indices = np.array([int(tile[1:]) - 1 for tile in self.tiles])
+
+    def _verify_tiles(self):
+        """
+        Verify that all tiles in the survey are valid tile names in the grid.
+        """
+        valid_tiles = set(self.grid.tilenames)
+        invalid_tiles = [tile for tile in self.tiles if tile not in valid_tiles]
+        if invalid_tiles:
+            raise ValueError(f"Invalid tile names in survey: {invalid_tiles}")
 
 
 class HEATS(Survey):
