@@ -12,7 +12,7 @@ requires = ["hatchling"]
 
 [project]
 name = "goto_sim"
-# You can chose to use dynamic versioning with hatch or static where you add it manually.
+# You can choose to use dynamic versioning with hatch or static where you add it manually.
 version = "0.1.0"
 
 description = "Simulation tools for the Gravitational-wave Optical Transient Observer"
@@ -79,6 +79,14 @@ tests = [
 ################################################################################
 # Tool Configuration
 ################################################################################
+
+
+# Configure Ruff linter
+[tool.ruff.lint]
+
+ignore = [
+    "F841",  # Unused variable
+]
 
 # Hatch is building your package's wheel and sdist
 # This tells hatch to only include Python packages (i.e., folders with __init__.py) in the build.
