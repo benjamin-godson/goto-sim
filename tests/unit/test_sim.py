@@ -7,7 +7,7 @@ is up to you. This test example provides a single test for the example.py
 module.
 """
 
-from time import perf_counter
+from time import perf_counter, perf_counter_ns
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -82,3 +82,18 @@ def test_rank_tiles():
     print(
         f"Ranking {cache.grid.ntiles} tiles for {cache.n_times} timesteps and {len(cache.nodes)} nodes took {end - start:g} seconds"
     )
+
+def test_run_simulator():
+    sim = Simulator()
+    sim.run()
+
+def bench_generate_cache(n_times: int = 1000):
+    """
+    Benchmark the altitude cache generation for a given number of time steps.
+    :param n_times: Number of time steps to simulate
+    """
+    cache = AltAzCache(start_time=Time.now(), n_times=n_times)
+    start = perf_counter_ns()
+    cache.generate_cache()
+    end = perf_counter_ns()
+    return end - start

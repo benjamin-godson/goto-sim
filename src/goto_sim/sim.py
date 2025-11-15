@@ -3,13 +3,13 @@ Core module for simulation classes and logic.
 """
 
 import numpy as np
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, erfa_astrom
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, erfa_astrom, get_sun
 from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
-from astropy.time import Time, TimeDelta
+from astropy.time import Time
 import astropy.units as u
 from gototile.grid import SkyGrid
 
-from .utils import concatenate_earth_locations
+from .utils import concat_earth_locations
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ class GOTONode:
         location: EarthLocation = None,
         name: str = None,
         telescopes: int = 2,
+        altlim: float = 30.0,
     ):
         """
         Initialize the GOTO node
@@ -50,7 +51,7 @@ class GOTONode:
 
         self.name = name if name is not None else site
         self.telescopes = telescopes
-        pass
+        self.horizon = altlim  # degrees
 
     @staticmethod
     def _resolve_site(site: str) -> EarthLocation:
@@ -137,7 +138,7 @@ class AltAzCache:
 
     def generate_cache(self):
         if self.n_times < 20_000:
-            locations = concatenate_earth_locations(self.locations)
+            locations = concat_earth_locations(self.locations)
             times = self.times
             coords = self.grid.coords
             frame = AltAz(
@@ -161,7 +162,7 @@ class AltAzCache:
                 start_idx = i * chunk_size
                 end_idx = min((i + 1) * chunk_size, self.n_times)
                 times_chunk = self.times[start_idx:end_idx]
-                locations = concatenate_earth_locations(
+                locations = concat_earth_locations(
                     [x.location for x in self.nodes]
                 )
                 coords = self.grid.coords
@@ -306,14 +307,16 @@ class Simulator:
         end_time: Time = None,
         time_step: u.Quantity[u.s] = 5 * u.min,
         cache: AltAzCache = None,
+        twilight_limit: float = -12.0,
+        altlim: float = 30.0,
     ):
         """
         Initialize the simulator
         """
         if nodes is None:
             nodes = [
-                GOTONode(site="goto-north"),
-                GOTONode(site="goto-south"),
+                GOTONode(site="goto-north", altlim=altlim),
+                GOTONode(site="goto-south", altlim=altlim),
             ]
         self.nodes = nodes
         if start_time is None:
@@ -330,7 +333,9 @@ class Simulator:
             start_time=start_time, stop_time=end_time, nodes=nodes, time_step=time_step
         )
         self.cache = cache
+        self.locations = [node.location for node in cache.nodes]
         self.times: Time = self.cache.times
+        self.twilight_limit = twilight_limit  # degrees
 
     def load_cached_data(self, filename: str):
         """
@@ -345,7 +350,83 @@ class Simulator:
         Run the simulation
         :return:
         """
+        self._setup()
+        solar_alts = self.sun_altaz.alt.deg
+        observations = []
+        tels_per_node = np.fromiter([node.telescopes for node in self.nodes], dtype=int)
+        # What index do we need each node to start from in the telescope list
+        tel_start_indices = np.cumsum(np.insert(tels_per_node, 0, 0))[:-1]
+        total_tels = tels_per_node.sum()
+
+        logger.info(
+            f"Running simulation with {total_tels} telescopes & {len(self.nodes)} nodes"
+        )
+        for t_i, time in enumerate(self.times):
+            for n_i, node in enumerate(self.nodes):
+                sun_alt = solar_alts[t_i, n_i]
+
+                if sun_alt > self.twilight_limit:
+                    logger.debug(
+                        f"Time {time.iso}, Node {node.name}: Daylight (Sun alt {sun_alt:.2f}°)"
+                    )
+                    continue
+
+                tile_alts = self.cache.alt[t_i, n_i]
+                visibility_mask = tile_alts > node.horizon  # degrees
+
+                for tel in range(tels_per_node[n_i]):
+                    obs = {
+                        "time": time.iso,
+                        "node": node.name,
+                        "telescope": tel_start_indices[n_i] + tel + 1,  # 1-indexed
+                        "sun_alt": sun_alt,
+                    }
+                    observations.append(obs)
+                    logger.debug(f"Time {time.iso}, Node {node.name}, Telescope {tel + 1}: Observation scheduled (Sun alt {sun_alt:.2f}°)")
+
+
+    def _setup(self):
+        """
+        Set up the simulation
+        :return:
+        """
+        # Cache AltAz data if not already cached
         if self.cache.data is None:
             logger.info("No AltAz data cache, generating new one")
             self.cache.generate_cache()
+
+        # Find sun's position at each time step
+        logger.debug("Calculating Solar positions")
+        sun = get_sun(self.times)
+        locations = concat_earth_locations(self.locations)
+        frame = AltAz(obstime=self.times[:, np.newaxis],
+                      location=locations[np.newaxis:,])
+        self.sun_altaz = sun[:, np.newaxis].transform_to(frame)
+
+        # Populate telescope array
+        self.tels = np.arange(np.fromiter([node.telescopes for node in self.nodes],
+                                          dtype=int).sum()) + 1 # 1-indexed
+
+class HEATSCOLDSimulator(Simulator):
+    """
+    A simulator for the HEATSCOLD survey strategy.
+    """
+
+    def __init__(
+        self,
+        nodes: list[GOTONode] = None,
+        start_time: Time = None,
+        end_time: Time = None,
+        time_step: u.Quantity[u.s] = 5 * u.min,
+        cache: AltAzCache = None,
+    ):
+        super().__init__(nodes, start_time, end_time, time_step, cache)
+
+    def run(self):
+        """
+        Run the HEATSCOLD simulation
+        :return:
+        """
+        super().run()
+        # Implement HEATSCOLD-specific logic here
         pass

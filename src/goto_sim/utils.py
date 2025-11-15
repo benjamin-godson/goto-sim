@@ -26,7 +26,7 @@ def generate_altitude_cache(grid:SkyGrid, times: Time, location: EarthLocation):
     frame = AltAz(obstime=times[:, np.newaxis], location=location, pressure=0)
     altaz = coords.transform_to(frame)
 
-def concatenate_earth_locations(locations: list[EarthLocation]) -> EarthLocation:
+def concat_earth_locations(locations: list[EarthLocation]) -> EarthLocation:
     """
     Combine a sequence EarthLocation objects into a single EarthLocation object
     :param locations: list of EarthLocation objects

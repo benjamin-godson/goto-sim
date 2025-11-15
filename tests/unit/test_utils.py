@@ -1,6 +1,5 @@
 
 import numpy as np
-import pytest
 from astropy.coordinates import SkyCoord, AltAz, EarthLocation, Longitude, TETE, \
     Latitude
 from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
@@ -46,11 +45,11 @@ def test_altitude_cache():
     print(f"Max difference: {np.max(diff):.6f} degrees")
     print(f"Std difference: {np.std(diff):.6f} degrees")
 
-def test_concatenate_earth_location():
-    from goto_sim.utils import concatenate_earth_locations
+def test_concat_earth_location():
+    from goto_sim.utils import concat_earth_locations
     lp = EarthLocation.of_site('lapalma')
     sso = EarthLocation.of_site('sso')
-    combined = concatenate_earth_locations([lp, sso])
+    combined = concat_earth_locations([lp, sso])
     assert isinstance(combined, EarthLocation)
     assert u.isclose(combined[0].lon, lp.lon)
     assert u.isclose(combined[0].lat, lp.lat)
