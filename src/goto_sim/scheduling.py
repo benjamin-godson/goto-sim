@@ -8,6 +8,10 @@ import numpy as np
 import astropy.units as u
 from gototile.grid import SkyGrid
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Survey:
     """
@@ -76,6 +80,7 @@ class Survey:
         for t in tile:
             if t in self.tiles:
                 self.tiles.remove(t)
+            logger.warning(f"Tile {t} not in survey; cannot remove.")
         self._generate_indices()
 
     def load_tiles(self, filename: str):
@@ -147,11 +152,12 @@ class HEATS(Survey):
             for i in range(self.grid.ntiles)
             if i not in self.indices
         ]
+        cold_tels = [tel for tel in range(1, 5) if tel not in self.tels]
         cold_survey = Survey(
             name="COLD Survey",
             tiles=cold_tiles,
             revisit_time=self.revisit_time,
-            tels=self.tels,
+            tels=cold_tels,
             grid=self.grid,
         )
         return cold_survey

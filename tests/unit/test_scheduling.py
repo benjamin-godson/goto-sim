@@ -12,7 +12,7 @@ def test_create_survey():
     assert survey.name == "Test Survey"
     assert survey.tiles == []
     assert survey.revisit_time == 1 * u.day
-    assert (survey.tel_mask == np.array([1, 2, 3, 4])).all()
+    assert (survey.tels == np.array([1, 2, 3, 4])).all()
 
     survey.add_tiles("T0001")
     assert survey.tiles == ["T0001"]

@@ -3,8 +3,8 @@ Core module for simulation classes and logic.
 """
 
 import numpy as np
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, erfa_astrom, get_sun
-from astropy.coordinates.erfa_astrom import ErfaAstromInterpolator
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun
+from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
 from astropy.time import Time
 import astropy.units as u
 from gototile.grid import SkyGrid
