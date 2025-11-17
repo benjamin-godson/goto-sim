@@ -28,6 +28,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install hatch
+    - name: Create hatch environment
+      run: |
+        hatch env create +py=${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install git+https://github.com/GOTO-OBS/goto-tile.git
