@@ -84,8 +84,12 @@ def test_rank_tiles():
 
 
 def test_run_simulator():
-    sim = Simulator()
+    sim = Simulator(
+        start_time=Time("2026-01-01T00:00:00"),
+        stop_time=Time("2026-01-02T00:00:00"),
+    )
     sim.run()
+    print(sim.results)
 
 
 def bench_generate_cache(n_times: int = 1000):
