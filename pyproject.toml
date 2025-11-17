@@ -32,9 +32,12 @@ classifiers = [
 ]
 # TODO: add keywords
 keywords = []
-# TODO: add dependencies
+
 dependencies = [
-    "gototile"
+    "astropy ~=6.0",
+    "numpy ~=1.26.4",
+    "gototile",
+    "ephem ~=4.2",
 ]
 
 [project.urls]
@@ -106,7 +109,10 @@ packages = ["src/goto_sim"]
 [tool.pytest.ini_options]
 testpaths = ["tests"] # Tells pytest what directory tests are in
 markers = ["raises"] # Tells pytest to not raise a warning if you use @pytest.mark.raises
-
+# ignore DeprecationWarnings from pkg_resources (gototile and ligo)
+filterwarnings = [
+    'ignore:.*pkg_resources:DeprecationWarning',
+]
 [tool.coverage.paths]
 source = [
     "src/goto_sim",
