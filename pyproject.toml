@@ -76,6 +76,7 @@ tests = [
     "pytest-raises",
     "pytest-randomly",
     "pytest-xdist",
+    "setuptools",
     "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git"
 ]
 
