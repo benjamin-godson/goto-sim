@@ -168,7 +168,7 @@ features = [
 ]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.10", "3.11", "3.12", "3.13"]
+python = ["3.9"]
 
 [tool.hatch.envs.test.scripts]
 run = "pytest {args:--cov=goto_sim --cov-report=term-missing --cov-report=xml}"
