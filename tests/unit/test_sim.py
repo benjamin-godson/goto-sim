@@ -77,7 +77,7 @@ def test_save_load_cache(tmp_path):
 
 def test_rank_tiles():
     cache = AltAzCache(
-        start_time=Time("2026-01-01T00:00:00"), stop_time=Time("2026-02-01T00:00:00")
+        start_time=Time("2026-01-01T00:00:00"), stop_time=Time("2026-01-02T00:00:00")
     )
     cache.generate_cache()
     tilenames = cache.grid.tilenames
