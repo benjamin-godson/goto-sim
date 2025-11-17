@@ -36,7 +36,7 @@ keywords = []
 dependencies = [
     "astropy ~=6.0",
     "numpy ~=1.26.4",
-    "gototile",
+    "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git",
     "ephem ~=4.2",
 ]
 
