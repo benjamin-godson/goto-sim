@@ -7,8 +7,11 @@ from typing import Union
 import numpy as np
 import astropy.units as u
 from gototile.grid import SkyGrid
+from importlib import resources
 
 import logging
+
+from goto_sim.utils import load_tilelist
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +129,9 @@ class Survey:
             raise ValueError(f"Invalid tile names in survey: {invalid_tiles}")
 
 
-class HEATS(Survey):
+class HEATSurvey(Survey):
     """
-    Convenience for generating survey for GOTO-HEATS.
+    Convenience for generating survey for GOTO-HEATS and COLD surveys.
     """
 
     def __init__(
@@ -136,10 +139,18 @@ class HEATS(Survey):
         name: str = "HEATS Survey",
         revisit_time: u.Quantity[u.day] = 1 * u.day,
         tels: Union[None, np.ndarray, list] = None,
+        tiles: Union[None, list[str]] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
     ):
+        if tels is None:
+            tels = [1, 3]
+        if tiles is None:
+            with resources.as_file(
+                resources.files("goto_sim").joinpath("data/tile_lists/HEATS.txt")
+            ) as p:
+                tiles = load_tilelist(str(p))
         super().__init__(
-            name=name, tiles=[], revisit_time=revisit_time, tels=tels, grid=grid
+            name=name, tiles=tiles, revisit_time=revisit_time, tels=tels, grid=grid
         )
 
     def generate_colds(self) -> Survey:
@@ -148,7 +159,7 @@ class HEATS(Survey):
         :return: Survey object containing the COLD tiles.
         """
         cold_tiles = [
-            f"T{str(i).zfill(4)}"
+            f"T{str(i + 1).zfill(4)}"
             for i in range(self.grid.ntiles)
             if i not in self.indices
         ]

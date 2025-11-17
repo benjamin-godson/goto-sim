@@ -2,6 +2,9 @@
 Core module for simulation classes and logic.
 """
 
+from pathlib import Path
+from typing import Union
+
 import numpy as np
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun
 from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
@@ -206,7 +209,7 @@ class AltAzCache:
         self.data = data.astype(self.dtype)
         self._validate()
 
-    def write_data(self, filename: str, overwrite: bool = True) -> None:
+    def write_data(self, filename: Union[str, Path], overwrite: bool = True) -> None:
         """
         Write the cache to a numpy file, including the times and node locations
         :param filename:

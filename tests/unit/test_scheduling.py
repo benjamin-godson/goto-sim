@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 
-from goto_sim.scheduling import Survey
+from goto_sim.scheduling import Survey, HEATSurvey
 
 
 def test_create_survey():
@@ -69,3 +69,22 @@ def test_survey_tile_verification():
     survey = Survey(name="Test Survey")
     survey.add_tiles(["T0002", "T0003"])
     assert survey.tiles == ["T0002", "T0003"]
+
+
+def test_heats_survey():
+    """
+    Test that HEATS survey works as expected.
+    """
+
+    heats = HEATSurvey()
+    cold = heats.generate_colds()
+    heats_tiles = set(heats.tiles)
+    cold_tiles = set(cold.tiles)
+    all_tiles = set(heats.grid.tilenames)
+
+    assert (heats.tels == [1, 3]).all()
+    assert (cold.tels == [2, 4]).all()
+
+    assert heats_tiles.isdisjoint(cold_tiles)
+    assert heats_tiles.union(cold_tiles) == all_tiles
+    assert set(np.append(heats.tels, cold.tels)) == {1, 2, 3, 4}

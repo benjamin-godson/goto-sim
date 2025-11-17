@@ -39,3 +39,14 @@ def concat_earth_locations(locations: list[EarthLocation]) -> EarthLocation:
     longitudes = [x.lon for x in locations]
     heights = [x.height for x in locations]
     return EarthLocation.from_geodetic(lat=latitudes, lon=longitudes, height=heights)
+
+
+def load_tilelist(filename: str) -> list[str]:
+    """
+    Load a list of tile names from a text file
+    :param filename: Path to the text file
+    :return: List of tile names
+    """
+    with open(filename, "r") as f:
+        tiles = [line.strip() for line in f if line.strip()]
+    return tiles

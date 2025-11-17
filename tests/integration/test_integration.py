@@ -47,3 +47,32 @@ def test_integration_simulator_survey():
             assert obs["telescope"] in [2, 4]
         else:
             assert obs["telescope"] in [1, 3]
+
+
+def test_integration_heat_survey():
+    """
+    Test integration between Simulator and HEATSurvey classes.
+    """
+    from goto_sim.scheduling import HEATSurvey
+
+    sim = Simulator()
+    heat_survey = HEATSurvey(tels=[1, 2])
+    cold_survey = heat_survey.generate_colds()
+
+    sim.add_survey(heat_survey)
+    sim.add_survey(cold_survey)
+
+    sim.run()
+
+    heat_tiles = set(heat_survey.tiles)
+    cold_tiles = set(cold_survey.tiles)
+
+    for obs in sim.results:
+        tile = obs["tile"]
+        telescope = obs["telescope"]
+        if tile in heat_tiles:
+            assert telescope in heat_survey.tels
+        elif tile in cold_tiles:
+            assert telescope in cold_survey.tels
+        else:
+            assert False, f"Observed tile {tile} not in HEAT or COLD surveys."

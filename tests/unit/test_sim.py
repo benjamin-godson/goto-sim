@@ -51,11 +51,21 @@ def test_generate_altaz_cache():
     assert isinstance(cache, AltAzCache)
 
     cache.generate_cache()
-    cache.write_data("test_altaz_cache.npz", overwrite=True)
-    loaded_cache = AltAzCache(
-        start_time=Time("2026-01-01T00:00:00"), stop_time=Time("2026-01-02T00:00:00")
-    )
-    loaded_cache.load_data("test_altaz_cache.npz")
+    assert cache.alt.shape == (cache.n_times, len(cache.nodes), cache.grid.ntiles)
+    assert cache.az.shape == (cache.n_times, len(cache.nodes), cache.grid.ntiles)
+    assert cache.times.shape == (cache.n_times,)
+
+
+def test_save_load_cache(tmp_path):
+    filepath = tmp_path / "altaz_cache.npz"
+
+    cache = AltAzCache(start_time=Time.now(), stop_time=Time.now() + 1 * u.hour)
+    cache.generate_cache()
+    cache.write_data(filepath, overwrite=True)
+
+    loaded_cache = AltAzCache(start_time=Time.now(), stop_time=Time.now() + 1 * u.hour)
+    loaded_cache.load_data(filepath)
+
     assert np.array_equal(cache.alt, loaded_cache.alt)
     assert np.array_equal(cache.az, loaded_cache.az)
     assert np.array_equal(cache.times.mjd, loaded_cache.times.mjd)
