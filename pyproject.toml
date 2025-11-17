@@ -36,7 +36,7 @@ keywords = []
 dependencies = [
     "astropy ~=6.0",
     "numpy ~=1.26.4",
-    "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git",
+    "gototile",
     "ephem ~=4.2",
 ]
 
@@ -76,6 +76,7 @@ tests = [
     "pytest-raises",
     "pytest-randomly",
     "pytest-xdist",
+    "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git"
 ]
 
 
@@ -103,7 +104,8 @@ only-packages = true
 [tool.hatch.build.targets.wheel]
 packages = ["src/goto_sim"]
 
-
+[tool.hatch.metadata]
+allow-direct-references = true
 
 ######## Configure pytest for your test suite ########
 [tool.pytest.ini_options]
