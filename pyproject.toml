@@ -64,6 +64,8 @@ docs = [
     "sphinx-autoapi>=3.6.0",
     "sphinx_design>=0.6.1",
     "sphinx-copybutton>=0.5.2",
+    "setuptools",
+    "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git",
 ]
 
 build = [
@@ -77,7 +79,7 @@ tests = [
     "pytest-randomly",
     "pytest-xdist",
     "setuptools",
-    "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git"
+    "gototile @ git+https://github.com/GOTO-OBS/goto-tile.git",
 ]
 
 
