@@ -1,3 +1,4 @@
+![Python](https://img.shields.io/badge/python-3.9-blue.svg)
 [![Run Tests](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml/badge.svg)](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml)
 
 # Welcome to GOTO Sim
@@ -20,16 +21,18 @@ $ pip install git+https://github.com/GOTO-OBS/goto-tile.git
 
 $ pip install goto-sim
 ```
-
+## Usage
 TODO: Add a brief example of how to use the package to this section
 
-To use goto-sim in your code:
+The simplest way to interact with GOTO Sim is to use the Simulator class:
 
 ```python
->>> from goto_sim.sim import Simulator
->>> sim = Simulator()
->>> sim.run()
+from goto_sim.sim import Simulator
+sim = Simulator()
+sim.run()
 ```
+This will simulate 24 hours of observations from the current time using default
+parameters. See the documentation for more details on how to customize the simulation.
 
 ## Contributing
 
