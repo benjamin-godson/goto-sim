@@ -89,8 +89,10 @@ tests = [
 
 
 # Configure Ruff linter
-[tool.ruff.lint]
+[tool.ruff]
+extend-exclude = ["*.ipynb"]
 
+[tool.ruff.lint]
 ignore = [
     "F841",  # Unused variable
 ]
