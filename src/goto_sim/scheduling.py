@@ -117,7 +117,8 @@ class Survey:
         """
         Generate indices for the tiles in the survey.
         """
-        self.indices = np.array([int(tile[1:]) - 1 for tile in self.tiles])
+        self.tile_nums = np.array([int(tile[1:]) for tile in self.tiles])
+        self.indices = self.tile_nums - 1
 
     def _verify_tiles(self):
         """
