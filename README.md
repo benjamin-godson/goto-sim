@@ -1,3 +1,5 @@
+[![Run Tests](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml/badge.svg)](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml)
+
 # Welcome to GOTO Sim
 
 GOTO Sim is a package used to simulate observational strategies for the
@@ -28,6 +30,9 @@ To use goto-sim in your code:
 >>> sim = Simulator()
 >>> sim.run()
 ```
+
+## Contributing
+
 
 ## Copyright
 

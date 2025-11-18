@@ -30,14 +30,6 @@ jobs:
         python -m pip install hatch
     - name: Run test suite
       run: hatch run +py=${{ matrix.python-version }} test:run
-    # If you use this step and have a private repo- then you will need to get a
-    # token from codecov and
-    # save it as a github secret called CODECOV_TOKEN
-    - name: Upload to codecov
-      if: matrix.python-version == '3.9'
-      uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7  # v5.5.1
-      with:
-        #token: ${{ secrets.CODECOV_TOKEN }}
-        verbose: true
-        files: ./coverage.xml
+    - name: Ruff Linting
+      uses: astral-sh/ruff-action@v3
 
