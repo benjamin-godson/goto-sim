@@ -93,6 +93,15 @@ def test_rank_tiles():
     )
 
 
+def test_solar_altitude():
+    cache = AltAzCache(
+        start_time=Time("2026-01-01T00:00:00"), stop_time=Time("2026-01-02T00:00:00")
+    )
+    cache.generate_cache()
+    solar_alts = cache.solar_alt
+    assert solar_alts.shape == (cache.n_times, len(cache.nodes))
+
+
 def test_run_simulator():
     sim = Simulator(
         start_time=Time("2026-01-01T00:00:00"),

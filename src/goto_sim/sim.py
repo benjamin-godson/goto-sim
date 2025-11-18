@@ -146,6 +146,7 @@ class AltAzCache:
         self.data = data
         self.grid = grid
         self.dtype = dtype
+        self.solar_alt: Union[np.array, None] = None
 
     def get_data(self) -> SkyCoord:
         if self.data is None:
@@ -207,17 +208,28 @@ class AltAzCache:
             data = np.concatenate(all_data, axis=0)
 
         self.data = data.astype(self.dtype)
+        # Generate solar altitudes for each time and node
+        logger.info("Calculating Solar altitudes")
+        sun = get_sun(self.times)
+        frame = AltAz(
+            obstime=self.times[:, np.newaxis], location=locations[np.newaxis :,]
+        )
+        solar_alt = sun[:, np.newaxis].transform_to(frame).alt.deg
+        self.solar_alt = solar_alt
         self._validate()
+        logger.info("Cache generation complete")
 
     def write_data(self, filename: Union[str, Path], overwrite: bool = True) -> None:
         """
         Write the cache to a numpy file, including the times and node locations
-        :param filename:
+        :param filename: Path to the output file
+        :param overwrite: Whether to overwrite an existing file
         :return:
         """
         times = self.times
         locations = [x.location for x in self.nodes]
         data = self.get_data()
+        solar_alt = self.solar_alt
 
         # Combine metadata and data into a single npz file
         np.savez_compressed(
@@ -227,6 +239,7 @@ class AltAzCache:
             locations_lon=[loc.lon.deg for loc in locations],
             locations_height=[loc.height.to(u.m).value for loc in locations],
             data=data,
+            solar_alt=solar_alt,
             overwrite=overwrite,
         )
 
@@ -242,6 +255,7 @@ class AltAzCache:
         latitudes = npzfile["locations_lat"]
         longitudes = npzfile["locations_lon"]
         heights = npzfile["locations_height"]
+        solar_alt = npzfile["solar_alt"]
 
         # Check that the locations and times match the existing ones
         if len(latitudes) != len(self.nodes):
@@ -269,6 +283,7 @@ class AltAzCache:
             raise ValueError(
                 f"Data shape in file {data.shape} does not match expected shape {expected_shape}"
             )
+        self.solar_alt = solar_alt
         self.data = data.astype(self.dtype)
         self._validate()
 
@@ -283,6 +298,14 @@ class AltAzCache:
             raise ValueError(
                 f"Cache data shape {data.shape} does not match expected shape {expected_shape}"
             )
+        # Check that solar altaz has the expected shape
+        if self.solar_alt is not None:
+            expected_sun_shape = (self.n_times, len(self.nodes))
+            if self.solar_alt.shape != expected_sun_shape:
+                raise ValueError(
+                    f"Solar altaz shape {self.solar_alt.shape} does not match expected shape {expected_sun_shape}"
+                )
+
         # Check that the last time matches the expected stop time within one time step
         last_time = self.times[-1]
         if not np.isclose(
@@ -418,7 +441,7 @@ class Simulator:
         :return:
         """
         self._setup()
-        solar_alts = self.sun_altaz.alt.deg
+        solar_alts = self.cache.solar_alt
 
         tels_per_node = np.fromiter([node.telescopes for node in self.nodes], dtype=int)
         # What index do we need each node to start from in the telescope list
@@ -484,7 +507,7 @@ class Simulator:
                     # Update observation count
                     obs_count[observed_tile_idx] += 1
                     obs = {
-                        "time": time.iso,
+                        "time": time.mjd,
                         "tile": tiles[observed_tile_idx],
                         "altitude": tile_alts[observed_tile_idx],
                         "node": node.name,
@@ -498,6 +521,22 @@ class Simulator:
         self.results = observations
         logger.info(f"Simulation complete, total observations: {len(observations)}")
 
+    def save_results(self, filename: Union[str, Path]):
+        """
+        Save the simulation run results to a CSV file
+        :param filename:
+        :return:
+        """
+        import pandas as pd
+
+        if not self.results:
+            logger.warning("No results to save")
+            return
+
+        df = pd.DataFrame(self.results)
+        df.to_csv(filename, index=False)
+        logger.info(f"Simulation results saved to {filename}")
+
     def _setup(self):
         """
         Set up the simulation by calculating solar positions and preparing telescope arrays
@@ -509,13 +548,13 @@ class Simulator:
             self.cache.generate_cache()
 
         # Find sun's position at each time step
-        logger.debug("Calculating Solar positions")
-        sun = get_sun(self.times)
-        locations = concat_earth_locations(self.locations)
-        frame = AltAz(
-            obstime=self.times[:, np.newaxis], location=locations[np.newaxis :,]
-        )
-        self.sun_altaz = sun[:, np.newaxis].transform_to(frame)
+        # logger.debug("Calculating Solar positions")
+        # sun = get_sun(self.times)
+        # locations = concat_earth_locations(self.locations)
+        # frame = AltAz(
+        #    obstime=self.times[:, np.newaxis], location=locations[np.newaxis :,]
+        # )
+        # self.sun_altaz = sun[:, np.newaxis].transform_to(frame)
 
         # Populate telescope array
         self.tels = (
