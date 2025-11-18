@@ -482,10 +482,10 @@ class Simulator:
                 for tel in range(tels_per_node[n_i]):
                     # Apply survey tile mask
                     tel_idx = tel_start_indices[n_i] + tel
-                    visibility_mask &= tel_tile_masks[tel_idx]
+                    validity_mask = visibility_mask & tel_tile_masks[tel_idx]
 
                     # Select the valid tiles with the least observations so far
-                    candidate_tiles = np.where(visibility_mask)[0]
+                    candidate_tiles = np.where(validity_mask)[0]
                     if len(candidate_tiles) == 0:
                         logger.debug(
                             f"Time {time.iso}: Node {node.name}, Tel {tel_start_indices[n_i] + tel + 1}: No visible tiles above horizon"

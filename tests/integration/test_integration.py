@@ -56,7 +56,7 @@ def test_integration_heat_survey():
     from goto_sim.scheduling import HEATSurvey
 
     sim = Simulator()
-    heat_survey = HEATSurvey(tels=[1, 2])
+    heat_survey = HEATSurvey(tels=[1, 3])
     cold_survey = heat_survey.generate_colds()
 
     sim.add_survey(heat_survey)
