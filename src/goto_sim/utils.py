@@ -50,3 +50,14 @@ def load_tilelist(filename: str) -> list[str]:
     with open(filename, "r") as f:
         tiles = [line.strip() for line in f if line.strip()]
     return tiles
+
+
+def save_tilelist(tiles: list[str], filename: str):
+    """
+    Save a list of tile names to a text file
+    :param tiles: List of tile names
+    :param filename: Path to the text file
+    """
+    with open(filename, "w") as f:
+        for tile in tiles:
+            f.write(f"{tile}\n")
