@@ -57,6 +57,16 @@ class GOTONode:
         self.telescopes = telescopes
         self.horizon = altlim  # degrees
 
+    def __str__(self):
+        return (
+            f"GOTONode '{self.name}' at ({self.lat.deg:.2f}°, {self.lon.deg:.2f}°), "
+            f"height {self.height.to(u.m).value:.1f} m, "
+            f"{self.telescopes} telescopes, altlim={self.horizon}°"
+        )
+
+    def __repr__(self):
+        return f"GOTONode(name={self.name}, location=({self.lat.deg:.2f}°, {self.lon.deg:.2f}°), height={self.height.to(u.m).value:.1f} m, telescopes={self.telescopes}, altlim={self.horizon}°)"
+
     @staticmethod
     def _resolve_site(site: str) -> EarthLocation:
         """
@@ -147,6 +157,16 @@ class AltAzCache:
         self.grid = grid
         self.dtype = dtype
         self.solar_alt: Union[np.array, None] = None
+
+    def __str__(self):
+        return (
+            f"AltAzCache with {len(self.nodes)} nodes, "
+            f"{self.n_times} time steps from {self.start_time.iso} to {self.stop_time.iso}, "
+            f"grid: {self.grid.name}, data type: {self.dtype}"
+        )
+
+    def __repr__(self):
+        return f"AltAzCache(nodes={self.nodes}, n_times={self.n_times}, start_time={self.start_time.iso}, stop_time={self.stop_time.iso}, time_step={self.time_step.to_value(u.s)} seconds, grid={self.grid.name}, dtype={self.dtype})"
 
     def get_data(self) -> SkyCoord:
         if self.data is None:
@@ -403,6 +423,17 @@ class Simulator:
         self.twilight_limit = twilight_limit  # degrees
         self.reserved_fraction = reserved_fraction
         self.results = []
+
+    def __str__(self):
+        return (
+            f"Simulator with {len(self.nodes)} nodes from {self.start_time.iso} to "
+            f"{self.stop_time.iso} with time step {self.time_step.to_value(u.s)} seconds "
+            f"and surveys: "
+            f"{', '.join([survey.name for survey in self.surveys]) if self.surveys else 'None'}"
+        )
+
+    def __repr__(self):
+        return f"Simulator(nodes={self.nodes}, start_time={self.start_time.iso}, stop_time={self.stop_time.iso}, time_step={self.time_step.to_value(u.s)} seconds, surveys={self.surveys}, twilight_limit={self.twilight_limit} degrees, reserved_fraction={self.reserved_fraction})"
 
     def load_cached_data(self, filename: str):
         """

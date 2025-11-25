@@ -58,6 +58,12 @@ class Survey:
         self._verify_tiles()
         self._generate_indices()
 
+    def __str__(self):
+        return f"Survey(name={self.name}, n_tiles={len(self.tiles)}, revisit_time={self.revisit_time}, tels={self.tels.tolist()})"
+
+    def __repr__(self):
+        return self.__str__()
+
     def add_tiles(self, tile: Union[str, list[str]]):
         """
         Add a tile to the survey. Can be a single tile name (e.g. T0993) or a list of
