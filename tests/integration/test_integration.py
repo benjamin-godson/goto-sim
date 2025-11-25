@@ -1,5 +1,5 @@
 from goto_sim.sim import Simulator
-from goto_sim.scheduling import Survey
+from goto_sim.scheduling import Survey, HEATSurvey
 
 
 def test_integration_simulator_survey():
@@ -53,7 +53,6 @@ def test_integration_heat_survey():
     """
     Test integration between Simulator and HEATSurvey classes.
     """
-    from goto_sim.scheduling import HEATSurvey
 
     sim = Simulator()
     heat_survey = HEATSurvey(tels=[1, 3])
@@ -76,3 +75,18 @@ def test_integration_heat_survey():
             assert telescope in cold_survey.tels
         else:
             assert False, f"Observed tile {tile} not in HEAT or COLD surveys."
+
+
+def test_reserve_time():
+    """
+    Test that the Simulator respects reserved time for non-high priority observations.
+    """
+    sim = Simulator(reserved_fraction=1)
+    heats = HEATSurvey()
+    cold = heats.generate_colds()
+    sim.add_survey(heats)
+    sim.add_survey(cold)
+    sim.run()
+    # With 100% reserved time, there should be no observations from COLD survey
+    for obs in sim.results:
+        assert obs["tile"] in heats.tiles

@@ -471,23 +471,31 @@ class Simulator:
 
         # For each telescope, create a mask of valid tiles based on the surveys assigned
         tel_tile_masks = np.zeros((total_tels, self.cache.grid.ntiles), dtype=bool)
+        # And determine which telescopes are affected by reserved time
+        tel_reserved_mask = np.zeros(total_tels, dtype=bool)
         if self.surveys is not None:
             for survey in self.surveys:
                 for tel in survey.tels:
                     tel_tile_masks[tel - 1] |= np.isin(
                         self.cache.grid.tilenames, survey.tiles
                     )
+                if survey.priority != "high":
+                    for tel in survey.tels:
+                        tel_reserved_mask[tel - 1] = True
         else:
             tel_tile_masks[:, :] = True  # All tiles are valid if no surveys assigned
 
         tiles = self.cache.grid.tilenames
         observations = []
         obs_count = np.zeros(len(tiles))
+        reserve_time = False
         for t_i, time in enumerate(self.times):
             # Random check for reserved time
             if np.random.rand() < self.reserved_fraction:
                 logger.debug(f"Time {time.iso}: Reserved time, skipping observations")
-                continue
+                reserve_time = True
+            else:
+                reserve_time = False
             for n_i, node in enumerate(self.nodes):
                 sun_alt = solar_alts[t_i, n_i]
 
@@ -504,6 +512,11 @@ class Simulator:
                 for tel in range(tels_per_node[n_i]):
                     # Apply survey tile mask
                     tel_idx = tel_start_indices[n_i] + tel
+                    if reserve_time and tel_reserved_mask[tel_idx]:
+                        logger.debug(
+                            f"Time {time.iso}: Node {node.name}, Tel {tel_idx + 1}: Reserved time, skipping observation"
+                        )
+                        continue
                     validity_mask = visibility_mask & tel_tile_masks[tel_idx]
 
                     # Select the valid tiles with the least observations so far

@@ -25,6 +25,7 @@ class Survey:
     :param tels: List of telescopes to use for this survey. If None, all telescopes are used.
     :param tel_mask: Boolean mask array indicating which telescopes to use. If None, all telescopes are used.
     :param grid: SkyGrid object defining the tile grid. Defaults to GOTO grid.
+    :param priority: Priority level of the survey (e.g. 'high', 'normal', 'low').
     """
 
     def __init__(
@@ -34,6 +35,7 @@ class Survey:
         revisit_time: u.Quantity[u.day] = 1 * u.day,
         tels: Union[None, np.ndarray, list] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        priority: str = "normal",
     ):
         self.name = name
         self.grid = grid
@@ -55,6 +57,7 @@ class Survey:
         for tel in self.tels:
             tel_mask[tel - 1] = True
         self.tel_mask = tel_mask
+        self.priority = priority
         self._verify_tiles()
         self._generate_indices()
 
@@ -148,6 +151,7 @@ class HEATSurvey(Survey):
         tels: Union[None, np.ndarray, list] = None,
         tiles: Union[None, list[str]] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        priority: str = "high",
     ):
         if tels is None:
             tels = [1, 3]
@@ -157,7 +161,12 @@ class HEATSurvey(Survey):
             ) as p:
                 tiles = load_tilelist(str(p))
         super().__init__(
-            name=name, tiles=tiles, revisit_time=revisit_time, tels=tels, grid=grid
+            name=name,
+            tiles=tiles,
+            revisit_time=revisit_time,
+            tels=tels,
+            grid=grid,
+            priority=priority,
         )
 
     def generate_colds(self) -> Survey:
@@ -177,5 +186,6 @@ class HEATSurvey(Survey):
             revisit_time=self.revisit_time,
             tels=cold_tels,
             grid=self.grid,
+            priority="low",
         )
         return cold_survey
