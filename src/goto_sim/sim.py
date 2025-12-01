@@ -390,6 +390,7 @@ class Simulator:
         twilight_limit: float = -12.0,
         altlim: float = 30.0,
         reserved_fraction=0.1,
+        too_fraction=0,
     ):
         """
         Initialize the simulator
@@ -422,6 +423,7 @@ class Simulator:
         self.times: Time = self.cache.times
         self.twilight_limit = twilight_limit  # degrees
         self.reserved_fraction = reserved_fraction
+        self.too_fraction = too_fraction
         self.results = []
 
     def __str__(self):
@@ -488,8 +490,14 @@ class Simulator:
         tiles = self.cache.grid.tilenames
         observations = []
         obs_count = np.zeros(len(tiles))
-        reserve_time = False
         for t_i, time in enumerate(self.times):
+            # Random check for ToO time, which takes precedence over all surveys
+            too_time = False
+            reserve_time = False
+            if np.random.rand() < self.too_fraction:
+                logger.debug(f"Time {time.iso}: ToO time, skipping observations")
+                too_time = True
+
             # Random check for reserved time
             if np.random.rand() < self.reserved_fraction:
                 logger.debug(f"Time {time.iso}: Reserved time, skipping observations")
@@ -512,9 +520,38 @@ class Simulator:
                 for tel in range(tels_per_node[n_i]):
                     # Apply survey tile mask
                     tel_idx = tel_start_indices[n_i] + tel
+                    if too_time:
+                        logger.debug(
+                            f"Time {time.iso}: Node {node.name}, Tel {tel_idx + 1}: ToO time, skipping observation"
+                        )
+                        observations.append(
+                            {
+                                "time": time.mjd,
+                                "tile": None,
+                                "target": "ToO",
+                                "altitude": None,
+                                "azimuth": None,
+                                "node": node.name,
+                                "telescope": tel_idx + 1,
+                                "sun_alt": sun_alt,
+                            }
+                        )
+                        continue
                     if reserve_time and tel_reserved_mask[tel_idx]:
                         logger.debug(
                             f"Time {time.iso}: Node {node.name}, Tel {tel_idx + 1}: Reserved time, skipping observation"
+                        )
+                        observations.append(
+                            {
+                                "time": time.mjd,
+                                "tile": None,
+                                "target": "Reserved",
+                                "altitude": None,
+                                "azimuth": None,
+                                "node": node.name,
+                                "telescope": tel_idx + 1,
+                                "sun_alt": sun_alt,
+                            }
                         )
                         continue
                     validity_mask = visibility_mask & tel_tile_masks[tel_idx]
@@ -544,6 +581,7 @@ class Simulator:
                     obs = {
                         "time": time.mjd,
                         "tile": tiles[observed_tile_idx],
+                        "target": tiles[observed_tile_idx],
                         "altitude": tile_alts[observed_tile_idx],
                         "azimuth": tile_azis[observed_tile_idx],
                         "node": node.name,
@@ -579,6 +617,7 @@ class Simulator:
             f.write(f"# Nodes: {', '.join([node.name for node in self.nodes])}\n")
             f.write(f"# Twilight Limit: {self.twilight_limit} degrees\n")
             f.write(f"# Reserved Fraction: {self.reserved_fraction}\n")
+            f.write(f"# ToO Fraction: {self.too_fraction}\n")
             f.write("# Surveys:\n")
             if self.surveys is not None:
                 for survey in self.surveys:
