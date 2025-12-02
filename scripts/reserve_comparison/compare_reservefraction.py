@@ -45,7 +45,7 @@ def compare_reserved_fraction(
 
 
 if __name__ == "__main__":
-    reserve_times = [0, 0.15, 0.25, 0.9]  # [0.1, 0.2, 0.3, 0.4, 0.6, 0.8]
+    reserve_times = [0.9]  # np.arange(0, 0.9, 0.05)
     cadences_hot = []
     cadences_cold = []
     cadences_all = []
