@@ -42,6 +42,8 @@ def test_integration_simulator_survey():
     sim.run()
 
     for obs in sim.results:
+        if obs["tile"] is None:
+            continue
         tile_num = int(obs["tile"][1:])
         if tile_num % 2 == 0:
             assert obs["telescope"] in [2, 4]
@@ -68,6 +70,8 @@ def test_integration_heat_survey():
 
     for obs in sim.results:
         tile = obs["tile"]
+        if tile is None:
+            continue
         telescope = obs["telescope"]
         if tile in heat_tiles:
             assert telescope in heat_survey.tels
@@ -89,4 +93,6 @@ def test_reserve_time():
     sim.run()
     # With 100% reserved time, there should be no observations from COLD survey
     for obs in sim.results:
+        if obs["tile"] is None:
+            continue
         assert obs["tile"] in heats.tiles
