@@ -96,3 +96,33 @@ def test_reserve_time():
         if obs["tile"] is None:
             continue
         assert obs["tile"] in heats.tiles
+
+
+def test_too_time():
+    """
+    Test that the Simulator respects TOO time fraction.
+    """
+    too_fraction = 1.0
+    sim = Simulator(too_fraction=too_fraction)
+    heats = HEATSurvey()
+    cold = heats.generate_colds()
+    sim.add_survey(heats)
+    sim.add_survey(cold)
+    sim.run()
+    # With 100% TOO time, there should be no observations from HEAT or COLD surveys
+    for obs in sim.results:
+        if obs["tile"] is None:
+            continue
+        assert False, f"Observed tile {obs['tile']} despite 100% TOO time."
+
+    too_fraction = 0.5
+    sim = Simulator(too_fraction=too_fraction, reserved_fraction=0)
+    sim.add_survey(heats)
+    sim.add_survey(cold)
+    sim.run()
+    total_observations = len(sim.results)
+    too_observations = sum(1 for obs in sim.results if obs["tile"] is None)
+    observed_too_fraction = too_observations / total_observations
+    assert abs(observed_too_fraction - too_fraction) < 0.1, (
+        f"Observed TOO fraction {observed_too_fraction:.2f} deviates from expected {too_fraction:.2f}"
+    )
