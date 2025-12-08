@@ -2,6 +2,9 @@ import numpy as np
 from astropy.coordinates import Angle, EarthLocation, AltAz
 from gototile.grid import SkyGrid
 from astropy.time import Time
+from typing import Union, Iterable, List
+from pathlib import Path
+import os
 
 
 def hour_angle_to_altitude(ha: Angle, dec: Angle, lat: Angle) -> Angle:
@@ -22,17 +25,19 @@ def generate_altitude_cache(grid: SkyGrid, times: Time, location: EarthLocation)
     :param grid: SkyGrid object
     :param times: Array of times
     :param location: EarthLocation object
-    :return: Altitude cache as a 2D numpy array
+    :return: Altitude cache as a 2D numpy array (degrees)
     """
     coords = grid.coords
     frame = AltAz(obstime=times[:, np.newaxis], location=location, pressure=0)
     altaz = coords.transform_to(frame)
+    # Return altitude values in degrees; caller can compute azimuth separately if needed
+    return altaz.alt.deg
 
 
-def concat_earth_locations(locations: list[EarthLocation]) -> EarthLocation:
+def concat_earth_locations(locations: Iterable[EarthLocation]) -> EarthLocation:
     """
     Combine a sequence EarthLocation objects into a single EarthLocation object
-    :param locations: list of EarthLocation objects
+    :param locations: iterable of EarthLocation objects
     :return: EarthLocation object
     """
     latitudes = [x.lat for x in locations]
@@ -41,23 +46,29 @@ def concat_earth_locations(locations: list[EarthLocation]) -> EarthLocation:
     return EarthLocation.from_geodetic(lat=latitudes, lon=longitudes, height=heights)
 
 
-def load_tilelist(filename: str) -> list[str]:
+def load_tilelist(filename: Union[str, os.PathLike]) -> List[str]:
     """
-    Load a list of tile names from a text file
+    Load a list of tile names from a text file. Accepts str or Path-like objects.
     :param filename: Path to the text file
     :return: List of tile names
     """
-    with open(filename, "r") as f:
+    path = Path(filename)
+    # Open using Path.open for Path-like safety
+    with path.open("r", encoding="utf-8") as f:
         tiles = [line.strip() for line in f if line.strip()]
     return tiles
 
 
-def save_tilelist(tiles: list[str], filename: str):
+def save_tilelist(tiles: Iterable[str], filename: Union[str, os.PathLike]):
     """
-    Save a list of tile names to a text file
-    :param tiles: List of tile names
+    Save a list of tile names to a text file. Accepts str or Path-like objects.
+    :param tiles: List (or iterable) of tile names
     :param filename: Path to the text file
     """
-    with open(filename, "w") as f:
+    path = Path(filename)
+    # Ensure parent directory exists
+    if path.parent and not path.parent.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
         for tile in tiles:
             f.write(f"{tile}\n")
