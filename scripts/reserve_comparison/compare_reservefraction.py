@@ -6,6 +6,7 @@ from goto_sim.sim import Simulator, AltAzCache, GOTONode
 from goto_sim.scheduling import HEATSurvey
 from gototile.grid import SkyGrid
 from astropy.time import Time
+import numpy as np
 import astropy.units as u
 import logging
 from time import perf_counter
@@ -17,7 +18,10 @@ logging.getLogger("astropy").setLevel(logging.ERROR)
 
 
 def compare_reserved_fraction(
-    simulator: Simulator, reserved_fractions: list[float], results_dir=None
+    simulator: Simulator,
+    reserved_fractions: list[float],
+    results_dir=None,
+    results_prefix="simulation_results_reserve_",
 ) -> pd.DataFrame:
     """
     Compare different reserve fractions for a list of surveys.
@@ -25,6 +29,7 @@ def compare_reserved_fraction(
     :param simulator: Simulator object to use for the comparison.
     :param reserved_fractions: List of reserve fractions to test (between 0 and 1).
     :param results_dir: Directory to save the results CSV files. If None, files are not saved.
+    :param results_prefix: Prefix for the results files.
     :return: DataFrame with cadence results for each survey and reserve fraction.
     """
     results = []
@@ -33,7 +38,7 @@ def compare_reserved_fraction(
         simulator.run()
         if results_dir is not None:
             results_file = os.path.join(
-                results_dir, f"simulation_results_reserve_{reserve_fraction:.2f}.csv"
+                results_dir, f"{results_prefix}{reserve_fraction:.2f}.csv"
             )
             simulator.save_results(results_file)
         obs_df = pd.DataFrame(simulator.results)
@@ -45,7 +50,8 @@ def compare_reserved_fraction(
 
 
 if __name__ == "__main__":
-    reserve_times = [0.9]  # np.arange(0, 0.9, 0.05)
+    simulate_allsky = True
+    reserve_times = np.arange(0, 0.95, 0.05)
     cadences_hot = []
     cadences_cold = []
     cadences_all = []
@@ -72,7 +78,6 @@ if __name__ == "__main__":
     print(f"Base HEAT survey has {len(base_heat_survey.tiles)} tiles.")
     base_cold_survey = base_heat_survey.generate_colds()
 
-    # Create extra HEAT surveys with different declination ranges
     grid: SkyGrid = SkyGrid.from_name("GOTO")
     simulator = Simulator(
         start_time=start_time,
@@ -86,5 +91,19 @@ if __name__ == "__main__":
     combined_results = compare_reserved_fraction(
         simulator, reserve_times, results_dir=results_dir
     )
+    # Repeat simulations but using an all-sky survey
+    if simulate_allsky:
+        simulator = Simulator(
+            start_time=start_time,
+            stop_time=stop_time,
+            too_fraction=0.06,
+        )
+        simulator.cache = cache
+        combined_allsky_results = compare_reserved_fraction(
+            simulator,
+            reserve_times,
+            results_dir=results_dir,
+            results_prefix="simulation_results_reserve_allsky_",
+        )
     end_time = perf_counter()
     print(f"Completed in {end_time - start:.2f} seconds.")
