@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun, HADec
 from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
 from astropy.time import Time
 import astropy.units as u
@@ -94,17 +94,17 @@ class GOTONode:
 
 class AltAzCache:
     """
-    Stores the AltAz coordinates of each GOTO tile for each time step of a
+    Stores the AltAz and Hour Angle coordinates of each GOTO tile for each time step of a
     simulation.
-    The data is stored as a 4D numpy array of shape (n_times, n_nodes, n_tiles, 2),
+    The data is stored as a 4D numpy array of shape (n_times, n_nodes, n_tiles, 3),
     where the last dimension contains the altitude and azimuth in degrees.
     Attributes:
         nodes: List of GOTONode objects representing the GOTO nodes.
         times: Array of Time objects representing the time steps.
         n_times: Number of time steps.
         time_step: Time step between each time step as an astropy time Quantity.
-        data: 4D numpy array of shape (n_times, n_nodes, n_tiles, 2) containing the
-              altitude and azimuth in degrees.
+        data: 4D numpy array of shape (n_times, n_nodes, n_tiles, 3) containing the
+              altitude and azimuth in degrees and hour angle.
         grid: SkyGrid object representing the GOTO sky grid.
         dtype: Data type of the stored data (default: np.float16).
 
@@ -194,13 +194,21 @@ class AltAzCache:
                 location=locations[:, np.newaxis, np.newaxis],
                 obstime=times[np.newaxis, np.newaxis, :],
             )
+            ha_decframe = HADec(
+                location=locations[:, np.newaxis, np.newaxis],
+                obstime=times[np.newaxis, np.newaxis, :],
+            )
             with erfa_astrom.set(ErfaAstromInterpolator(1 * u.day)):
                 altaz: SkyCoord = coords[np.newaxis, :, np.newaxis].transform_to(frame)
+                hadec: SkyCoord = coords[np.newaxis, :, np.newaxis].transform_to(
+                    ha_decframe
+                )
             # Saving the whole SkyCoord is a bit inefficient, especially for large n_times
             alts = altaz.alt.deg
             azs = altaz.az.deg
+            has = hadec.ha.deg  # Hour angle in degrees
             # Combine both values into an array of size (n_times, n_nodes, n_tiles, 2)
-            data = np.stack([alts, azs], axis=-1).transpose(2, 0, 1, 3)
+            data = np.stack([alts, azs, has], axis=-1).transpose(2, 0, 1, 3)
         else:
             # For large n_times, we generate the data in chunks to save memory
             chunk_size = 10_000
@@ -217,13 +225,21 @@ class AltAzCache:
                     location=locations[:, np.newaxis, np.newaxis],
                     obstime=times_chunk[np.newaxis, np.newaxis, :],
                 )
+                ha_decframe = HADec(
+                    location=locations[:, np.newaxis, np.newaxis],
+                    obstime=times_chunk[np.newaxis, np.newaxis, :],
+                )
                 with erfa_astrom.set(ErfaAstromInterpolator(1 * u.day)):
                     altaz: SkyCoord = coords[np.newaxis, :, np.newaxis].transform_to(
                         frame
                     )
+                    hadec: SkyCoord = coords[np.newaxis, :, np.newaxis].transform_to(
+                        ha_decframe
+                    )
                 alts = altaz.alt.deg
                 azs = altaz.az.deg
-                data_chunk = np.stack([alts, azs], axis=-1).transpose(2, 0, 1, 3)
+                has = hadec.ha.deg  # Hour angle in degrees
+                data_chunk = np.stack([alts, azs, has], axis=-1).transpose(2, 0, 1, 3)
                 all_data.append(data_chunk)
             data = np.concatenate(all_data, axis=0)
 
@@ -298,7 +314,7 @@ class AltAzCache:
 
         data = npzfile["data"]
         # Check that the data shape matches
-        expected_shape = (self.n_times, len(self.nodes), self.grid.ntiles, 2)
+        expected_shape = (self.n_times, len(self.nodes), self.grid.ntiles, 3)
         if data.shape != expected_shape:
             raise ValueError(
                 f"Data shape in file {data.shape} does not match expected shape {expected_shape}"
@@ -313,7 +329,7 @@ class AltAzCache:
         :return:
         """
         data = self.get_data()
-        expected_shape = (self.n_times, len(self.nodes), self.grid.ntiles, 2)
+        expected_shape = (self.n_times, len(self.nodes), self.grid.ntiles, 3)
         if data.shape != expected_shape:
             raise ValueError(
                 f"Cache data shape {data.shape} does not match expected shape {expected_shape}"
@@ -362,6 +378,15 @@ class AltAzCache:
         """
         data = self.get_data()
         return data[..., 1]
+
+    @property
+    def ha(self) -> np.ndarray:
+        """
+        Get the hour angles from the data cache
+        :return:
+        """
+        data = self.get_data()
+        return data[..., 2]
 
 
 class Simulator:
@@ -473,6 +498,8 @@ class Simulator:
 
         # For each telescope, create a mask of valid tiles based on the surveys assigned
         tel_tile_masks = np.zeros((total_tels, self.cache.grid.ntiles), dtype=bool)
+        # For each telescope create an hour angle limit based on the surveys assigned
+        tel_ha_limit = np.full(total_tels, 180)  # degrees
         # And determine which telescopes are affected by reserved time
         tel_reserved_mask = np.zeros(total_tels, dtype=bool)
         if self.surveys is not None:
@@ -481,11 +508,19 @@ class Simulator:
                     tel_tile_masks[tel - 1] |= np.isin(
                         self.cache.grid.tilenames, survey.tiles
                     )
+                    # Update hour angle limit
+                    if survey.ha_limit is not None:
+                        tel_ha_limit[tel - 1] = min(
+                            tel_ha_limit[tel - 1], survey.ha_limit.deg
+                        )
                 if survey.priority != "high":
                     for tel in survey.tels:
                         tel_reserved_mask[tel - 1] = True
         else:
             tel_tile_masks[:, :] = True  # All tiles are valid if no surveys assigned
+            tel_reserved_mask[:] = (
+                True  # Reserved time affects all tels if no surveys assigned
+            )
 
         tiles = self.cache.grid.tilenames
         observations = []
@@ -504,19 +539,21 @@ class Simulator:
                 reserve_time = True
             else:
                 reserve_time = False
+            # Loop over each node
             for n_i, node in enumerate(self.nodes):
+                # Check for daytime
                 sun_alt = solar_alts[t_i, n_i]
-
                 if sun_alt > self.twilight_limit:
                     logger.debug(
                         f"Time {time.iso}: Node {node.name}: Daylight (Sun alt {sun_alt:.2f}°)"
                     )
                     continue
-
+                # Check tile visibility
                 tile_alts = self.cache.alt[t_i, n_i]
                 tile_azis = self.cache.az[t_i, n_i]
+                tile_has = self.cache.ha[t_i, n_i]
                 visibility_mask = tile_alts > node.horizon  # degrees
-
+                # TODO: Smarter tile selection logic based on hour angle, airmass, etc.
                 for tel in range(tels_per_node[n_i]):
                     # Apply survey tile mask
                     tel_idx = tel_start_indices[n_i] + tel
@@ -531,6 +568,7 @@ class Simulator:
                                 "target": "ToO",
                                 "altitude": None,
                                 "azimuth": None,
+                                "hour_angle": None,
                                 "node": node.name,
                                 "telescope": tel_idx + 1,
                                 "sun_alt": sun_alt,
@@ -548,13 +586,19 @@ class Simulator:
                                 "target": "Reserved",
                                 "altitude": None,
                                 "azimuth": None,
+                                "hour_angle": None,
                                 "node": node.name,
                                 "telescope": tel_idx + 1,
                                 "sun_alt": sun_alt,
                             }
                         )
                         continue
-                    validity_mask = visibility_mask & tel_tile_masks[tel_idx]
+
+                    # Apply hour angle limit
+                    ha_mask = np.abs(tile_has) <= tel_ha_limit[tel_idx]
+                    validity_mask = visibility_mask & ha_mask
+                    # Apply survey tile mask
+                    validity_mask = validity_mask & tel_tile_masks[tel_idx]
 
                     # Select the valid tiles with the least observations so far
                     candidate_tiles = np.where(validity_mask)[0]
@@ -584,6 +628,7 @@ class Simulator:
                         "target": tiles[observed_tile_idx],
                         "altitude": tile_alts[observed_tile_idx],
                         "azimuth": tile_azis[observed_tile_idx],
+                        "hour_angle": tile_has[observed_tile_idx],
                         "node": node.name,
                         "telescope": tel_start_indices[n_i] + tel + 1,  # 1-indexed
                         "sun_alt": sun_alt,

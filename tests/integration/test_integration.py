@@ -1,3 +1,5 @@
+from astropy.coordinates import Angle
+
 from goto_sim.sim import Simulator
 from goto_sim.scheduling import Survey, HEATSurvey
 
@@ -57,7 +59,7 @@ def test_integration_heat_survey():
     """
 
     sim = Simulator()
-    heat_survey = HEATSurvey(tels=[1, 3])
+    heat_survey = HEATSurvey(tels=[1, 3], ha_limit=Angle(2, "hour"))
     cold_survey = heat_survey.generate_colds()
 
     sim.add_survey(heat_survey)
@@ -126,3 +128,24 @@ def test_too_time():
     assert abs(observed_too_fraction - too_fraction) < 0.1, (
         f"Observed TOO fraction {observed_too_fraction:.2f} deviates from expected {too_fraction:.2f}"
     )
+
+
+def test_hourangle_limit():
+    """
+    Test that the HEATSurvey respects hour angle limit.
+    """
+    sim = Simulator()
+    for ha in [1, 3, 6]:
+        ha_limit = Angle(ha, "hour")
+        heat_survey = HEATSurvey(tels=[1, 3], ha_limit=ha_limit)
+        cold_survey = heat_survey.generate_colds()
+        sim.add_survey(heat_survey)
+        sim.add_survey(cold_survey)
+        sim.run()
+
+        for obs in sim.results:
+            if obs["telescope"] in heat_survey.tels:
+                ha = obs["hour_angle"]
+                assert abs(ha) <= ha_limit.deg, (
+                    f"Observed hour angle {ha} exceeds limit {ha_limit} for HEAT survey."
+                )

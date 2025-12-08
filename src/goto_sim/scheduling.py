@@ -6,6 +6,7 @@ from typing import Union
 
 import numpy as np
 import astropy.units as u
+from astropy.coordinates import Angle
 from gototile.grid import SkyGrid
 from importlib import resources
 
@@ -26,6 +27,7 @@ class Survey:
     :param tel_mask: Boolean mask array indicating which telescopes to use. If None, all telescopes are used.
     :param grid: SkyGrid object defining the tile grid. Defaults to GOTO grid.
     :param priority: Priority level of the survey (e.g. 'high', 'normal', 'low').
+    :param ha_limit: Hour angle limit for observations in this survey.
     """
 
     def __init__(
@@ -36,6 +38,7 @@ class Survey:
         tels: Union[None, np.ndarray, list] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
         priority: str = "normal",
+        ha_limit: Angle = Angle(6, unit=u.hourangle),
     ):
         self.name = name
         self.grid = grid
@@ -58,6 +61,7 @@ class Survey:
             tel_mask[tel - 1] = True
         self.tel_mask = tel_mask
         self.priority = priority
+        self.ha_limit = ha_limit
         self._verify_tiles()
         self._generate_indices()
 
@@ -152,6 +156,7 @@ class HEATSurvey(Survey):
         tiles: Union[None, list[str]] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
         priority: str = "high",
+        ha_limit: Angle = Angle(6, unit=u.hourangle),
     ):
         if tels is None:
             tels = [1, 3]
@@ -167,6 +172,7 @@ class HEATSurvey(Survey):
             tels=tels,
             grid=grid,
             priority=priority,
+            ha_limit=ha_limit,
         )
 
     def generate_colds(self) -> Survey:
