@@ -1,4 +1,6 @@
+import pandas as pd
 from astropy.coordinates import Angle
+import astropy.units as u
 
 from goto_sim.sim import Simulator
 from goto_sim.scheduling import Survey, HEATSurvey
@@ -149,3 +151,22 @@ def test_hourangle_limit():
                 assert abs(ha) <= ha_limit.deg, (
                     f"Observed hour angle {ha} exceeds limit {ha_limit} for HEAT survey."
                 )
+
+
+def test_revisit_time():
+    """
+    Test that the Survey respects revisit time.
+    """
+    for revisit_time in [0, 1, 2, 5]:
+        sim = Simulator()
+        survey = HEATSurvey(revisit_time=revisit_time * u.day)
+        sim.add_survey(survey)
+        sim.run()
+        # Check that no tile is observed more than once within the revisit time
+        df = pd.DataFrame(sim.results)
+        diffs = df.groupby("tile")["time"].diff().dropna()
+        # Check that all time differences are greater than or equal to revisit_time
+        for diff in diffs:
+            assert diff >= revisit_time, (
+                f"Tile observed again after {diff} days, which is less than revisit time of {revisit_time} days."
+            )

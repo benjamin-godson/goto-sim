@@ -502,8 +502,14 @@ class Simulator:
         tel_ha_limit = np.full(total_tels, 180)  # degrees
         # And determine which telescopes are affected by reserved time
         tel_reserved_mask = np.zeros(total_tels, dtype=bool)
+        # Set minimum time between revisits for each tile based on surveys
+        tile_revisit_times = np.zeros(self.cache.grid.ntiles)  # in seconds
         if self.surveys is not None:
             for survey in self.surveys:
+                # Update revisit times
+                if survey.revisit_time is not None:
+                    for tile in survey.indices:
+                        tile_revisit_times[tile] = survey.revisit_time.to_value(u.s)
                 for tel in survey.tels:
                     tel_tile_masks[tel - 1] |= np.isin(
                         self.cache.grid.tilenames, survey.tiles
@@ -524,6 +530,7 @@ class Simulator:
 
         tiles = self.cache.grid.tilenames
         observations = []
+        last_observation_per_tile = np.zeros(len(tiles))  # MJD of last observation
         obs_count = np.zeros(len(tiles))
         for t_i, time in enumerate(self.times):
             # Random check for ToO time, which takes precedence over all surveys
@@ -599,6 +606,15 @@ class Simulator:
                     validity_mask = visibility_mask & ha_mask
                     # Apply survey tile mask
                     validity_mask = validity_mask & tel_tile_masks[tel_idx]
+                    # Apply revisit time mask
+                    if np.any(tile_revisit_times > 0):
+                        time_since_last_obs = (
+                            time.mjd - last_observation_per_tile
+                        ) * 86400.0  # seconds
+                        revisit_mask = (time_since_last_obs >= tile_revisit_times) | (
+                            last_observation_per_tile == 0
+                        )
+                        validity_mask = validity_mask & revisit_mask
 
                     # Select the valid tiles with the least observations so far
                     candidate_tiles = np.where(validity_mask)[0]
@@ -607,6 +623,7 @@ class Simulator:
                             f"Time {time.iso}: Node {node.name}, Tel {tel_start_indices[n_i] + tel + 1}: No visible tiles above horizon"
                         )
                         continue
+                    # TODO: Improve tile selection strategy
                     # Find the tile(s) with the least observations
                     least_obs_tiles = candidate_tiles[
                         np.where(
@@ -619,7 +636,6 @@ class Simulator:
                         np.argmax(tile_alts[least_obs_tiles])
                     ]
                     observed_tile_idx = best_tile_idx
-
                     # Update observation count
                     obs_count[observed_tile_idx] += 1
                     obs = {
@@ -634,6 +650,7 @@ class Simulator:
                         "sun_alt": sun_alt,
                     }
                     observations.append(obs)
+                    last_observation_per_tile[observed_tile_idx] = time.mjd
                     logger.debug(
                         f"Time {time.iso}: Node {node.name}, Tel {tel_start_indices[n_i] + tel + 1}: Tile {obs['tile']} at Alt {obs['altitude']:.2f}° (Sun alt {sun_alt:.2f}°)"
                     )

@@ -151,7 +151,8 @@ class HEATSurvey(Survey):
     def __init__(
         self,
         name: str = "HEATS Survey",
-        revisit_time: u.Quantity[u.day] = 1 * u.day,
+        revisit_time: u.Quantity[u.day] = 0.5 * u.day,
+        cold_revisit_time: u.Quantity[u.day] = 1 * u.day,
         tels: Union[None, np.ndarray, list] = None,
         tiles: Union[None, list[str]] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
@@ -174,6 +175,7 @@ class HEATSurvey(Survey):
             priority=priority,
             ha_limit=ha_limit,
         )
+        self.cold_revisit_time = cold_revisit_time
 
     def generate_colds(self) -> Survey:
         """
@@ -189,7 +191,7 @@ class HEATSurvey(Survey):
         cold_survey = Survey(
             name="COLD Survey",
             tiles=cold_tiles,
-            revisit_time=self.revisit_time,
+            revisit_time=self.cold_revisit_time,
             tels=cold_tels,
             grid=self.grid,
             priority="low",

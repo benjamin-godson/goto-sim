@@ -74,7 +74,7 @@ if __name__ == "__main__":
     start = perf_counter()
 
     # Create HEAT survey
-    base_heat_survey = HEATSurvey()
+    base_heat_survey = HEATSurvey()  # Adjust revisit time here if necessary
     print(f"Base HEAT survey has {len(base_heat_survey.tiles)} tiles.")
     base_cold_survey = base_heat_survey.generate_colds()
 
