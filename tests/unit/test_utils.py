@@ -6,12 +6,13 @@ from astropy.time import Time
 
 from time import perf_counter
 
+from gototile.grid import SkyGrid
+
 
 def test_altitude_cache():
     """
     Test the generate_altitude_cache function.
     """
-    from gototile.grid import SkyGrid
 
     lapalma = EarthLocation.of_site("lapalma")
     sso = EarthLocation.of_site("sso")

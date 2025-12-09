@@ -6,6 +6,7 @@ from typing import Union
 
 import numpy as np
 import astropy.units as u
+from astropy.coordinates import Angle
 from gototile.grid import SkyGrid
 from importlib import resources
 
@@ -25,6 +26,8 @@ class Survey:
     :param tels: List of telescopes to use for this survey. If None, all telescopes are used.
     :param tel_mask: Boolean mask array indicating which telescopes to use. If None, all telescopes are used.
     :param grid: SkyGrid object defining the tile grid. Defaults to GOTO grid.
+    :param priority: Priority level of the survey (e.g. 'high', 'normal', 'low').
+    :param ha_limit: Hour angle limit for observations in this survey.
     """
 
     def __init__(
@@ -34,6 +37,8 @@ class Survey:
         revisit_time: u.Quantity[u.day] = 1 * u.day,
         tels: Union[None, np.ndarray, list] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        priority: str = "normal",
+        ha_limit: Angle = Angle(6, unit=u.hourangle),
     ):
         self.name = name
         self.grid = grid
@@ -55,8 +60,16 @@ class Survey:
         for tel in self.tels:
             tel_mask[tel - 1] = True
         self.tel_mask = tel_mask
+        self.priority = priority
+        self.ha_limit = ha_limit
         self._verify_tiles()
         self._generate_indices()
+
+    def __str__(self):
+        return f"Survey(name={self.name}, n_tiles={len(self.tiles)}, revisit_time={self.revisit_time}, tels={self.tels.tolist()})"
+
+    def __repr__(self):
+        return self.__str__()
 
     def add_tiles(self, tile: Union[str, list[str]]):
         """
@@ -138,10 +151,13 @@ class HEATSurvey(Survey):
     def __init__(
         self,
         name: str = "HEATS Survey",
-        revisit_time: u.Quantity[u.day] = 1 * u.day,
+        revisit_time: u.Quantity[u.day] = 0.5 * u.day,
+        cold_revisit_time: u.Quantity[u.day] = 1 * u.day,
         tels: Union[None, np.ndarray, list] = None,
         tiles: Union[None, list[str]] = None,
         grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        priority: str = "high",
+        ha_limit: Angle = Angle(6, unit=u.hourangle),
     ):
         if tels is None:
             tels = [1, 3]
@@ -151,8 +167,15 @@ class HEATSurvey(Survey):
             ) as p:
                 tiles = load_tilelist(str(p))
         super().__init__(
-            name=name, tiles=tiles, revisit_time=revisit_time, tels=tels, grid=grid
+            name=name,
+            tiles=tiles,
+            revisit_time=revisit_time,
+            tels=tels,
+            grid=grid,
+            priority=priority,
+            ha_limit=ha_limit,
         )
+        self.cold_revisit_time = cold_revisit_time
 
     def generate_colds(self) -> Survey:
         """
@@ -168,8 +191,9 @@ class HEATSurvey(Survey):
         cold_survey = Survey(
             name="COLD Survey",
             tiles=cold_tiles,
-            revisit_time=self.revisit_time,
+            revisit_time=self.cold_revisit_time,
             tels=cold_tels,
             grid=self.grid,
+            priority="low",
         )
         return cold_survey

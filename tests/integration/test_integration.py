@@ -1,5 +1,9 @@
+import pandas as pd
+from astropy.coordinates import Angle
+import astropy.units as u
+
 from goto_sim.sim import Simulator
-from goto_sim.scheduling import Survey
+from goto_sim.scheduling import Survey, HEATSurvey
 
 
 def test_integration_simulator_survey():
@@ -42,6 +46,8 @@ def test_integration_simulator_survey():
     sim.run()
 
     for obs in sim.results:
+        if obs["tile"] is None:
+            continue
         tile_num = int(obs["tile"][1:])
         if tile_num % 2 == 0:
             assert obs["telescope"] in [2, 4]
@@ -53,10 +59,9 @@ def test_integration_heat_survey():
     """
     Test integration between Simulator and HEATSurvey classes.
     """
-    from goto_sim.scheduling import HEATSurvey
 
     sim = Simulator()
-    heat_survey = HEATSurvey(tels=[1, 3])
+    heat_survey = HEATSurvey(tels=[1, 3], ha_limit=Angle(2, "hour"))
     cold_survey = heat_survey.generate_colds()
 
     sim.add_survey(heat_survey)
@@ -69,6 +74,8 @@ def test_integration_heat_survey():
 
     for obs in sim.results:
         tile = obs["tile"]
+        if tile is None:
+            continue
         telescope = obs["telescope"]
         if tile in heat_tiles:
             assert telescope in heat_survey.tels
@@ -76,3 +83,90 @@ def test_integration_heat_survey():
             assert telescope in cold_survey.tels
         else:
             assert False, f"Observed tile {tile} not in HEAT or COLD surveys."
+
+
+def test_reserve_time():
+    """
+    Test that the Simulator respects reserved time for non-high priority observations.
+    """
+    sim = Simulator(reserved_fraction=1)
+    heats = HEATSurvey()
+    cold = heats.generate_colds()
+    sim.add_survey(heats)
+    sim.add_survey(cold)
+    sim.run()
+    # With 100% reserved time, there should be no observations from COLD survey
+    for obs in sim.results:
+        if obs["tile"] is None:
+            continue
+        assert obs["tile"] in heats.tiles
+
+
+def test_too_time():
+    """
+    Test that the Simulator respects TOO time fraction.
+    """
+    too_fraction = 1.0
+    sim = Simulator(too_fraction=too_fraction)
+    heats = HEATSurvey()
+    cold = heats.generate_colds()
+    sim.add_survey(heats)
+    sim.add_survey(cold)
+    sim.run()
+    # With 100% TOO time, there should be no observations from HEAT or COLD surveys
+    for obs in sim.results:
+        if obs["tile"] is None:
+            continue
+        assert False, f"Observed tile {obs['tile']} despite 100% TOO time."
+
+    too_fraction = 0.5
+    sim = Simulator(too_fraction=too_fraction, reserved_fraction=0)
+    sim.add_survey(heats)
+    sim.add_survey(cold)
+    sim.run()
+    total_observations = len(sim.results)
+    too_observations = sum(1 for obs in sim.results if obs["tile"] is None)
+    observed_too_fraction = too_observations / total_observations
+    assert abs(observed_too_fraction - too_fraction) < 0.1, (
+        f"Observed TOO fraction {observed_too_fraction:.2f} deviates from expected {too_fraction:.2f}"
+    )
+
+
+def test_hourangle_limit():
+    """
+    Test that the HEATSurvey respects hour angle limit.
+    """
+    sim = Simulator()
+    for ha in [1, 3, 6]:
+        ha_limit = Angle(ha, "hour")
+        heat_survey = HEATSurvey(tels=[1, 3], ha_limit=ha_limit)
+        cold_survey = heat_survey.generate_colds()
+        sim.add_survey(heat_survey)
+        sim.add_survey(cold_survey)
+        sim.run()
+
+        for obs in sim.results:
+            if obs["telescope"] in heat_survey.tels:
+                ha = obs["hour_angle"]
+                assert abs(ha) <= ha_limit.deg, (
+                    f"Observed hour angle {ha} exceeds limit {ha_limit} for HEAT survey."
+                )
+
+
+def test_revisit_time():
+    """
+    Test that the Survey respects revisit time.
+    """
+    for revisit_time in [0, 1, 2, 5]:
+        sim = Simulator()
+        survey = HEATSurvey(revisit_time=revisit_time * u.day)
+        sim.add_survey(survey)
+        sim.run()
+        # Check that no tile is observed more than once within the revisit time
+        df = pd.DataFrame(sim.results)
+        diffs = df.groupby("tile")["time"].diff().dropna()
+        # Check that all time differences are greater than or equal to revisit_time
+        for diff in diffs:
+            assert diff >= revisit_time, (
+                f"Tile observed again after {diff} days, which is less than revisit time of {revisit_time} days."
+            )
