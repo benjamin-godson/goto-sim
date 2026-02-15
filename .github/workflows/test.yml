@@ -24,6 +24,10 @@ jobs:
       uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v5.1.0
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install setuptools and wheel
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install setuptools wheel
     - name: Install hatch
       run: |
         python -m pip install --upgrade pip
