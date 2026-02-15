@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test
   schedule:
     - cron: '0 23 * * Sun'
 
