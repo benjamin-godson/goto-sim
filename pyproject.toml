@@ -38,6 +38,7 @@ dependencies = [
     "numpy ~=1.26.4",
     "gototile",
     "ephem ~=4.2",
+    "setuptools <= 80.3.1"
 ]
 
 [project.urls]
@@ -118,7 +119,7 @@ testpaths = ["tests"] # Tells pytest what directory tests are in
 markers = ["raises"] # Tells pytest to not raise a warning if you use @pytest.mark.raises
 # ignore DeprecationWarnings from pkg_resources (gototile and ligo)
 filterwarnings = [
-    'ignore:.*pkg_resources:DeprecationWarning',
+    #'ignore:.*pkg_resources:DeprecationWarning',
 ]
 log_cli = true
 log_cli_level = "INFO"
