@@ -1,5 +1,5 @@
 ![Python](https://img.shields.io/badge/python-3.9-blue.svg)
-[![Run Tests](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml/badge.svg)](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml)
+[![Tests](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml/badge.svg)](https://github.com/benjamin-godson/goto-sim/actions/workflows/test.yml)
 
 # Welcome to GOTO Sim
 
