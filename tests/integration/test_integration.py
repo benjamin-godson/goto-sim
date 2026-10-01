@@ -1,9 +1,9 @@
+import astropy.units as u
 import pandas as pd
 from astropy.coordinates import Angle
-import astropy.units as u
 
+from goto_sim.scheduling import HEATSurvey, Survey
 from goto_sim.sim import Simulator
-from goto_sim.scheduling import Survey, HEATSurvey
 
 
 def test_integration_simulator_survey():

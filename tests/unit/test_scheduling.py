@@ -1,7 +1,7 @@
-import numpy as np
 import astropy.units as u
+import numpy as np
 
-from goto_sim.scheduling import Survey, HEATSurvey
+from goto_sim.scheduling import HEATSurvey, Survey
 
 
 def test_create_survey():

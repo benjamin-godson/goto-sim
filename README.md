@@ -28,6 +28,7 @@ The simplest way to interact with GOTO Sim is to use the Simulator class:
 
 ```python
 from goto_sim.sim import Simulator
+
 sim = Simulator()
 sim.run()
 ```

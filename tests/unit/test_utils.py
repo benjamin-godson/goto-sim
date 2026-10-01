@@ -1,11 +1,10 @@
-import numpy as np
-from astropy.coordinates import AltAz, EarthLocation, Longitude, Latitude
-from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
-import astropy.units as u
-from astropy.time import Time
-
 from time import perf_counter
 
+import astropy.units as u
+import numpy as np
+from astropy.coordinates import AltAz, EarthLocation, Latitude, Longitude
+from astropy.coordinates.erfa_astrom import ErfaAstromInterpolator, erfa_astrom
+from astropy.time import Time
 from gototile.grid import SkyGrid
 
 

@@ -2,19 +2,19 @@
 Core module for simulation classes and logic.
 """
 
+import logging
 from pathlib import Path
 from typing import Union
 
-import numpy as np
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun, HADec
-from astropy.coordinates.erfa_astrom import erfa_astrom, ErfaAstromInterpolator
-from astropy.time import Time
 import astropy.units as u
+import numpy as np
+from astropy.coordinates import AltAz, EarthLocation, HADec, SkyCoord, get_sun
+from astropy.coordinates.erfa_astrom import ErfaAstromInterpolator, erfa_astrom
+from astropy.time import Time
 from gototile.grid import SkyGrid
 
 from .scheduling import Survey
 from .utils import concat_earth_locations
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -682,10 +682,10 @@ class Simulator:
             f.write(f"# ToO Fraction: {self.too_fraction}\n")
             f.write("# Surveys:\n")
             if self.surveys is not None:
-                for survey in self.surveys:
-                    f.write(
-                        f"#   {survey.name} Survey with {len(survey.tiles)} tiles on Telescopes: {', '.join(map(str, survey.tels))}\n"
-                    )
+                f.writelines(
+                    f"#   {survey.name} Survey with {len(survey.tiles)} tiles on Telescopes: {', '.join(map(str, survey.tels))}\n"
+                    for survey in self.surveys
+                )
             else:
                 f.write("#   No surveys assigned\n")
             # Write data
@@ -742,4 +742,3 @@ class HEATSCOLDSimulator(Simulator):
         """
         super().run()
         # Implement HEATSCOLD-specific logic here
-        pass

@@ -9,11 +9,11 @@ module.
 
 from time import perf_counter, perf_counter_ns
 
-import numpy as np
-
-from goto_sim.sim import GOTONode, Simulator, AltAzCache
-from astropy.time import Time
 import astropy.units as u
+import numpy as np
+from astropy.time import Time
+
+from goto_sim.sim import AltAzCache, GOTONode, Simulator
 
 
 def test_create_node():

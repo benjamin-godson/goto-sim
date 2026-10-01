@@ -1,16 +1,15 @@
-import os
-
-import pandas as pd
-
-from goto_sim.sim import Simulator, AltAzCache, GOTONode
-from goto_sim.scheduling import HEATSurvey
-from gototile.grid import SkyGrid
-from astropy.time import Time
-import numpy as np
-import astropy.units as u
 import logging
+import os
 from time import perf_counter
 
+import astropy.units as u
+import numpy as np
+import pandas as pd
+from astropy.time import Time
+from gototile.grid import SkyGrid
+
+from goto_sim.scheduling import HEATSurvey
+from goto_sim.sim import AltAzCache, GOTONode, Simulator
 
 logging.basicConfig(level=logging.INFO)
 # Filter out astropy warnings for cleaner output

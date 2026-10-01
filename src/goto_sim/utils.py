@@ -1,10 +1,12 @@
-import numpy as np
-from astropy.coordinates import Angle, EarthLocation, AltAz
-from gototile.grid import SkyGrid
-from astropy.time import Time
-from typing import Union, Iterable, List
-from pathlib import Path
 import os
+from collections.abc import Iterable
+from pathlib import Path
+from typing import List, Union
+
+import numpy as np
+from astropy.coordinates import AltAz, Angle, EarthLocation
+from astropy.time import Time
+from gototile.grid import SkyGrid
 
 
 def hour_angle_to_altitude(ha: Angle, dec: Angle, lat: Angle) -> Angle:

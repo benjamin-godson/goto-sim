@@ -1,9 +1,9 @@
 #
 # GOTO Sim documentation build configuration file
 #
+import importlib.metadata
 import os
 import sys
-import importlib.metadata
 from datetime import datetime
 
 # Ensure src/ is on the path so autodoc can find the package

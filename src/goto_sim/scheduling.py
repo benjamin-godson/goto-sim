@@ -2,15 +2,14 @@
 Tools to support scheduling in the GOTO simulator. Allowing for creation of surveys.
 """
 
+import logging
+from importlib import resources
 from typing import Union
 
-import numpy as np
 import astropy.units as u
+import numpy as np
 from astropy.coordinates import Angle
 from gototile.grid import SkyGrid
-from importlib import resources
-
-import logging
 
 from goto_sim.utils import load_tilelist
 
