@@ -2,9 +2,10 @@
 Tools to support scheduling in the GOTO simulator. Allowing for creation of surveys.
 """
 
+from __future__ import annotations
+
 import logging
 from importlib import resources
-from typing import Union
 
 import astropy.units as u
 import numpy as np
@@ -32,15 +33,21 @@ class Survey:
     def __init__(
         self,
         name: str,
-        tiles: Union[None, list[str]] = None,
+        tiles: None | list[str] = None,
         revisit_time: u.Quantity[u.day] = 1 * u.day,
-        tels: Union[None, np.ndarray, list] = None,
-        grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        tels: None | np.ndarray | list = None,
+        grid: None | SkyGrid = None,
         priority: str = "normal",
-        ha_limit: Angle = Angle(6, unit=u.hourangle),
+        ha_limit: None | Angle = None,
     ):
         self.name = name
-        self.grid = grid
+        if grid is None:
+            self.grid = SkyGrid.from_name("GOTO")
+        else:
+            self.grid = grid
+        if ha_limit is None:
+            ha_limit = Angle(6, unit=u.hourangle)
+        self.ha_limit = ha_limit
 
         if tiles is not None:
             self.tiles = tiles
@@ -70,7 +77,7 @@ class Survey:
     def __repr__(self):
         return self.__str__()
 
-    def add_tiles(self, tile: Union[str, list[str]]):
+    def add_tiles(self, tile: str | list[str]):
         """
         Add a tile to the survey. Can be a single tile name (e.g. T0993) or a list of
         tile names.
@@ -84,7 +91,7 @@ class Survey:
         self._verify_tiles()
         self._generate_indices()
 
-    def remove_tiles(self, tile: Union[str, list[str]]):
+    def remove_tiles(self, tile: str | list[str]):
         """
         Remove a tile from the survey. Can be a single tile name (e.g. T0993) or a list of
         tile names.
@@ -152,11 +159,11 @@ class HEATSurvey(Survey):
         name: str = "HEATS Survey",
         revisit_time: u.Quantity[u.day] = 0.5 * u.day,
         cold_revisit_time: u.Quantity[u.day] = 1 * u.day,
-        tels: Union[None, np.ndarray, list] = None,
-        tiles: Union[None, list[str]] = None,
-        grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        tels: None | np.ndarray | list = None,
+        tiles: None | list[str] = None,
+        grid: None | SkyGrid = None,
         priority: str = "high",
-        ha_limit: Angle = Angle(6, unit=u.hourangle),
+        ha_limit: None | Angle = None,
     ):
         if tels is None:
             tels = [1, 3]

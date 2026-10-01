@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import os
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Union
 
 import numpy as np
 from astropy.coordinates import AltAz, Angle, EarthLocation
@@ -48,7 +49,7 @@ def concat_earth_locations(locations: Iterable[EarthLocation]) -> EarthLocation:
     return EarthLocation.from_geodetic(lat=latitudes, lon=longitudes, height=heights)
 
 
-def load_tilelist(filename: Union[str, os.PathLike]) -> List[str]:
+def load_tilelist(filename: str | os.PathLike) -> list[str]:
     """
     Load a list of tile names from a text file. Accepts str or Path-like objects.
     :param filename: Path to the text file
@@ -61,7 +62,7 @@ def load_tilelist(filename: Union[str, os.PathLike]) -> List[str]:
     return tiles
 
 
-def save_tilelist(tiles: Iterable[str], filename: Union[str, os.PathLike]):
+def save_tilelist(tiles: Iterable[str], filename: str | os.PathLike):
     """
     Save a list of tile names to a text file. Accepts str or Path-like objects.
     :param tiles: List (or iterable) of tile names

@@ -4,18 +4,18 @@
 import importlib.metadata
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Ensure src/ is on the path so autodoc can find the package
 sys.path.insert(0, os.path.abspath("../src"))
 
 # Get the year so it automatically updates
-current_year = datetime.now().year
+current_year = datetime.now(tz=timezone.utc).year
 
 # -- General project information -----------------------------
 # General information about the project.
 project = "GOTO Sim"
-copyright = "Copyright © 2025 Ben Godson"
+copyright = f"Copyright © {current_year} Ben Godson"
 html_show_sphinx = False
 
 # Try to get the version info for the project you're documenting, acts as replacement for

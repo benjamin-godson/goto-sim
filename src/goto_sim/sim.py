@@ -2,13 +2,21 @@
 Core module for simulation classes and logic.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Union
 
 import astropy.units as u
 import numpy as np
-from astropy.coordinates import AltAz, EarthLocation, HADec, SkyCoord, get_sun
+from astropy.coordinates import (
+    AltAz,
+    EarthLocation,
+    HADec,
+    SkyCoord,
+    UnknownSiteException,
+    get_sun,
+)
 from astropy.coordinates.erfa_astrom import ErfaAstromInterpolator, erfa_astrom
 from astropy.time import Time
 from gototile.grid import SkyGrid
@@ -27,9 +35,9 @@ class GOTONode:
 
     def __init__(
         self,
-        site: str = None,
+        site: str | None = None,
         location: EarthLocation = None,
-        name: str = None,
+        name: str | None = None,
         telescopes: int = 2,
         altlim: float = 30.0,
     ):
@@ -46,8 +54,8 @@ class GOTONode:
         else:
             try:
                 self.location = self._resolve_site(site)
-            except ValueError as e:
-                raise e
+            except UnknownSiteException as e:
+                raise ValueError(f"Could not resolve site name '{site}': {e}")
 
         self.lat = self.location.lat
         self.lon = self.location.lon
@@ -85,7 +93,7 @@ class GOTONode:
         location_name = sites.get(site.lower(), site)
         try:
             location = EarthLocation.of_site(location_name)
-        except Exception as e:
+        except UnknownSiteException as e:
             raise ValueError(
                 f"Could not resolve site name '{site}': {e}, try goto-n or goto-s"
             )
@@ -112,14 +120,14 @@ class AltAzCache:
 
     def __init__(
         self,
-        nodes: list[GOTONode] = None,
+        nodes: list[GOTONode] | None = None,
         times: Time = None,
         start_time: Time = None,
         stop_time: Time = None,
-        n_times: int = None,
+        n_times: int | None = None,
         time_step: u.Quantity[u.s] = 5 * u.min,
         data: SkyCoord = None,
-        grid: SkyGrid = SkyGrid.from_name("GOTO"),
+        grid: SkyGrid = None,
         dtype: np.dtype = np.float16,
     ):
         if nodes is None:
@@ -154,9 +162,11 @@ class AltAzCache:
             )
 
         self.data = data
+        if grid is None:
+            grid = SkyGrid.from_name("GOTO")
         self.grid = grid
         self.dtype = dtype
-        self.solar_alt: Union[np.array, None] = None
+        self.solar_alt: np.array | None = None
 
     def __str__(self):
         return (
@@ -255,7 +265,7 @@ class AltAzCache:
         self._validate()
         logger.info("Cache generation complete")
 
-    def write_data(self, filename: Union[str, Path], overwrite: bool = True) -> None:
+    def write_data(self, filename: str | Path, overwrite: bool = True) -> None:
         """
         Write the cache to a numpy file, including the times and node locations
         :param filename: Path to the output file
@@ -406,11 +416,11 @@ class Simulator:
 
     def __init__(
         self,
-        nodes: list[GOTONode] = None,
+        nodes: list[GOTONode] | None = None,
         start_time: Time = None,
         stop_time: Time = None,
         time_step: u.Quantity[u.s] = 5 * u.min,
-        surveys: list[Survey] = None,
+        surveys: list[Survey] | None = None,
         cache: AltAzCache = None,
         twilight_limit: float = -12.0,
         altlim: float = 30.0,
@@ -657,7 +667,7 @@ class Simulator:
         self.results = observations
         logger.info(f"Simulation complete, total observations: {len(observations)}")
 
-    def save_results(self, filename: Union[str, Path]):
+    def save_results(self, filename: str | Path):
         """
         Save the simulation run results to a CSV file
         :param filename:
@@ -727,7 +737,7 @@ class HEATSCOLDSimulator(Simulator):
 
     def __init__(
         self,
-        nodes: list[GOTONode] = None,
+        nodes: list[GOTONode] | None = None,
         start_time: Time = None,
         stop_time: Time = None,
         time_step: u.Quantity[u.s] = 5 * u.min,
